@@ -76,9 +76,7 @@ def adv_11_ith_step (X A B : Finset ℕ) (h₁ : A ⊆ X) (h₂ : B ⊆ X) (z : 
   Aᵢ = { x ∈ Xᵢ | odd_divides x Bᵢ }
 
 lemma calc_Bᵢ_zero (X A : Finset ℕ)
-  : calc_Bᵢ 0 X A = ∅ := by
-  rfl
-  done
+  : calc_Bᵢ 0 X A = ∅ := rfl
 
 lemma calc_Bᵢ_geq_card_X (X A : Finset ℕ)
   : ∀i≥card X, calc_Bᵢ i X A = calc_Bᵢ X.card X A := by
@@ -89,7 +87,7 @@ lemma calc_Bᵢ_geq_card_X (X A : Finset ℕ)
   match i with
   | 0 =>
     rw [calc_Bᵢ_zero]
-    intro x
+    intro _
     contradiction
   | n =>
     intro x
