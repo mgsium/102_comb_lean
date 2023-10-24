@@ -58,6 +58,7 @@ def calc_Bᵢ (i : ℕ) (X A : Finset ℕ) : Finset ℕ := match i with
     let c := Or (And (xₖ ∈ A) (odd_divides xₖ Bₖ)) (And (xₖ ∉ A) ¬(odd_divides xₖ Bₖ))
     Bₖ ∪ (if (¬ c) then { xₖ } else ∅)
 
+
 #eval calc_Xᵢ 3 { 1, 2, 3 }
 #eval calc_Aᵢ 1 { 1, 2, 3 } { 1, 2 }
 #eval calc_Aᵢ 2 { 1, 2, 3 } { 1, 2 }
@@ -66,43 +67,165 @@ def calc_Bᵢ (i : ℕ) (X A : Finset ℕ) : Finset ℕ := match i with
 #eval calc_Bᵢ 2 { 1, 2, 3 } { 1, 2 }
 #eval calc_Bᵢ 3 { 1, 2, 3 } { 1, 2 }
 
+
+
 def adv_11_ith_step (X A B : Finset ℕ) (h₁ : A ⊆ X) (h₂ : B ⊆ X) (z : 0 ∉ X) (i : ℕ) :=
   let Aᵢ := calc_Aᵢ i X A
   let Bᵢ := calc_Bᵢ i X A
   let Xᵢ := calc_Xᵢ i X
   Aᵢ = { x ∈ Xᵢ | odd_divides x Bᵢ }
 
-def const_set (i: ℕ) : Finset ℕ := match i with
-  | 0 => { 0 }
-  | k + 1 => const_set (k) ∪ { i }
-
-lemma const_set_mono (i: ℕ) : const_set (i) ⊆ const_set (i + 1) := by
-  sorry
+lemma calc_Bᵢ_zero (X A : Finset ℕ)
+  : calc_Bᵢ 0 X A = ∅ := by
+  rfl
   done
+
+lemma calc_Bᵢ_geq_card_X (X A : Finset ℕ)
+  : ∀i≥card X, calc_Bᵢ i X A = calc_Bᵢ X.card X A := by
+  intros i h
+  apply Finset.ext
+  intro x
+  constructor
+  match i with
+  | 0 =>
+    rw [calc_Bᵢ_zero]
+    intro x
+    contradiction
+  | n =>
+    intro x
+    unfold calc_Bᵢ
+    . sorry
+  /-
+  . unfold calc_Bᵢ
+    split
+    . norm_num
+    case _ c
+    . split_ifs
+      case _ d
+      . intro h₁
+        unfold calc_Bᵢ at h₁
+
+      . sorry
+
+
+  . unfold calc_Bᵢ
+    split
+    . norm_num
+    case _ c
+    . sorry
+  -/
+  done
+
+lemma calc_Bᵢ_mono3 (X A : Finset ℕ) (i : ℕ)
+  : calc_Bᵢ i X A ⊆ calc_Bᵢ (i + 1) X A := by
+  intro x hₓ
+  match i with
+  | 0 =>
+    simp
+    rw [calc_Bᵢ_zero] at hₓ
+    contradiction
+  | k =>
+    if h : X.card < k then
+      unfold calc_Bᵢ
+      split_ifs
+      case _ c
+      . simp at c
+
+      case _ c
+      . simp at c
+        linarith
+    else
+  simp at h
+  unfold calc_Bᵢ at *
+  split_ifs
+  case _ d
+  . sorry
+  . sorry
+  done
+
+def nat_num_set (i: ℕ) : Finset ℕ := match i with
+  | 0 => { 0 }
+  | k + 1 => nat_num_set (k) ∪ { i }
+
+lemma nat_num_mono (i: ℕ) : nat_num_set (i) ⊆ nat_num_set (i + 1) := by
+  match i with
+  | 0 =>
+    unfold nat_num_set
+    simp
+  | k+1 =>
+    intros x h
+    unfold nat_num_set
+    norm_num
+    apply Or.inl
+    exact h
+  done
+
 
 lemma calc_Bᵢ_mono (X A : Finset ℕ) (i : ℕ)
   : calc_Bᵢ i X A ⊆ calc_Bᵢ (i + 1) X A := by
   intro x hₓ
   unfold calc_Bᵢ
   split_ifs
+  case _ c
   · unfold calc_Bᵢ
     split
+    case _ a b
     . simp
       unfold calc_Bᵢ at hₓ
       split at hₓ
+      case _ c
       . contradiction
+      case _ c
+      . split at hₓ
+        . rw [b] at hₓ
+          rw [calc_Bᵢ_zero] at hₓ
+          contradiction
+        case _ d e f
+        . refine not_succ_le_zero ?_ ?_
+          . exact x
+          . simp
+            rw [b] at f
+            rw [not_lt] at f
+            contradiction
+    case _ c
+    . split_ifs
+      case _ d
       .
-    . sorry
+      . sorry
   . simp
     apply Or.inl
     exact hₓ
   done
+
+
+lemma calc_Bᵢ_mono2 (X A : Finset ℕ) (i : ℕ)
+  : calc_Bᵢ i X A ⊆ calc_Bᵢ (i + 1) X A := by
+  intro x hₓ
+  unfold calc_Bᵢ
+  split_ifs
+  case _ c
+  . unfold calc_Bᵢ at hₓ
+    split at hₓ
+    case _ d
+    . contradiction
+    . split_ifs at hₓ
+      . exact hₓ
+      case _ _ f
+      sorry
+  . sorry
+  done
+
+
+
+
+
 
 lemma adv_11_base (X A B: Finset ℕ) (h₁ : A ⊆ X) (h₂ : B ⊆ X) (z : 0 ∉ X)
       : adv_11_ith_step X A B h₁ h₂ z 0 := by
   simp [adv_11_ith_step, calc_Aᵢ, eq_calc_zero, Finset.inter_empty]
   done
 
+/-
 lemma adv_11_ind (X A B: Finset ℕ) (h₁ : A ⊆ X) (h₂ : B ⊆ X) (z : 0 ∉ X) (k : ℕ)
     : adv_11_ith_step X A B h₁ h₂ z k → adv_11_ith_step X A B h₁ h₂ z (k + 1) := by
   repeat rw [adv_11_ith_step]
@@ -121,3 +244,4 @@ lemma adv_11_ind (X A B: Finset ℕ) (h₁ : A ⊆ X) (h₂ : B ⊆ X) (z : 0 �
     . sorry
   . sorry
   done
+-/
