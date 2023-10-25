@@ -21,9 +21,9 @@ example (i k : ℕ) (h : i ≤ k) : i - 1 ≤ k := by
 def calc_Xᵢ (i : ℕ) (X : Finset ℕ) : Finset ℕ :=
   List.toFinset $ List.take i $ X.sort (· ≥ ·)
 
-lemma eq_calc_zero (X : Finset ℕ) : calc_Xᵢ 0 X = {} := by
-  simp [calc_Xᵢ]
-  done
+--lemma eq_calc_zero (X : Finset ℕ) : calc_Xᵢ 0 X = {} := by
+--  simp [calc_Xᵢ]
+--  done
 
 lemma list_take_subset (X : List ℕ) (k : ℕ)
   : List.take k X ⊆ List.take (k + 1) X := by
@@ -66,38 +66,9 @@ def calc_Bᵢ (i : ℕ) (X A : Finset ℕ) : Finset ℕ := match i with
 #eval calc_Bᵢ 2 { 1, 2, 3 } { 1, 2 }
 #eval calc_Bᵢ 3 { 1, 2, 3 } { 1, 2 }
 
-def adv_11_ith_step (X A : Finset ℕ) (i : ℕ) :=
-  let Aᵢ := calc_Aᵢ i X A
-  let Bᵢ := calc_Bᵢ i X A
-  let Xᵢ := calc_Xᵢ i X
-  Aᵢ = { x ∈ Xᵢ | odd_divides x Bᵢ }
-
-
-lemma calc_Bᵢ_zero (X A : Finset ℕ)
-  : calc_Bᵢ 0 X A = ∅ := rfl
-
-lemma calc_Bᵢ_geq_card_X (X A : Finset ℕ)
-  : ∀i≥card X, calc_Bᵢ i X A = calc_Bᵢ X.card X A := by
-  intros i h
-  apply Finset.ext
-  intro x
-  constructor
-  match i with
-  | 0 =>
-    rw [calc_Bᵢ_zero]
-    intro _
-    contradiction
-  | n =>
-    intro x
-    unfold calc_Bᵢ
-    . sorry
-  sorry
-  done
-
-
 def nat_num_set (i: ℕ) : Finset ℕ := match i with
-  | 0 => { 0 }
-  | k + 1 => nat_num_set (k) ∪ { i }
+  | 0   => {0}
+  | k+1 => nat_num_set (k) ∪ {i}
 
 lemma nat_num_mono (i: ℕ) : nat_num_set (i) ⊆ nat_num_set (i + 1) := by
   match i with
@@ -159,12 +130,67 @@ lemma calc_Bᵢ_mono (X A : Finset ℕ) (i : ℕ)
   done
 
 
+/-
+lemma calc_Bᵢ_i_geq_card_X (X A : Finset ℕ)
+  : ∀i≥card X, calc_Bᵢ i X A = calc_Bᵢ (card X) X A := by
+  intro i h
+  induction i with
+  | zero =>
+    simp at h
+    rw [h]
+    rfl
+  | succ i ih =>
+    rw [← calc_Bᵢ_threshold]
+    by_cases (i≥card X)
+    . apply ih
+      exact h
+    case _ h₁
+    . norm_num at h
+      norm_num at h₁
+      sorry
+    . simp at h
 
-
-lemma adv_11_base (X A B: Finset ℕ) (h₁ : A ⊆ X) (h₂ : B ⊆ X) (z : 0 ∉ X)
-      : adv_11_ith_step X A B h₁ h₂ z 0 := by
-  simp [adv_11_ith_step, calc_Aᵢ, eq_calc_zero, Finset.inter_empty]
+    -- exact calc_Bᵢ_threshold
   done
+-/
+
+lemma calc_Bᵢ_zero (X A : Finset ℕ)
+  : calc_Bᵢ 0 X A = ∅ := rfl
+
+lemma calc_Bᵢ_i_geq_card_X (X A : Finset ℕ) (i : ℕ) (h : i ≥ card X)
+  : calc_Bᵢ i X A = calc_Bᵢ (card X) X A := by
+  induction i with
+  | zero =>
+    norm_num at h
+    rw [h]
+    rfl
+  | succ n ih =>
+    rw [← calc_Bᵢ_threshold]
+    . sorry
+    . sorry
+    done
+
+def adv_11_ith_step (X A : Finset ℕ) (i : ℕ) :=
+  Aᵢ = { x ∈ Xᵢ | odd_divides x Bᵢ }
+  where Aᵢ := calc_Aᵢ i X A
+        Bᵢ := calc_Bᵢ i X A
+        Xᵢ := calc_Xᵢ i X
+
+lemma adv_11_ind (X A B : Finset ℕ) (h₁ : A ⊆ X) (h₂ : B ⊆ X) (z : 0 ∉ X)
+      : ∀i:ℕ, adv_11_ith_step X A i → adv_11_ith_step X A (i+1):= by
+  intro i h
+  unfold adv_11_ith_step
+  apply Set.ext
+  intro x
+  constructor
+  . sorry
+  . sorry
+  done
+
+--lemma adv_11_base (X A B: Finset ℕ) (h₁ : A ⊆ X) (h₂ : B ⊆ X) (z : 0 ∉ X)
+--      : adv_11_ith_step X A B h₁ h₂ z 0 := by
+--  simp [adv_11_ith_step, calc_Aᵢ, eq_calc_zero, Finset.inter_empty]
+--  done
 
 /-
 lemma adv_11_ind (X A B: Finset ℕ) (h₁ : A ⊆ X) (h₂ : B ⊆ X) (z : 0 ∉ X) (k : ℕ)
@@ -172,7 +198,6 @@ lemma adv_11_ind (X A B: Finset ℕ) (h₁ : A ⊆ X) (h₂ : B ⊆ X) (z : 0 �
   repeat rw [adv_11_ith_step]
   intro hy
   rw [Set.Subset.antisymm_iff]
-
   constructor
   . -- simp [calc_Aᵢ]
     intro x hₓ
