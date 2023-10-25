@@ -4,74 +4,59 @@ open Finset Nat
 
 --[IMO Shortlist 1994] A subset M of {1,2,3,...,15} does not contain three elements whose product is a perfect square. Determine the maximum number of elements in M.
 
-def is_perfect_square (n : ℕ) : Prop :=
-  ∃ m : ℕ, m^2 = n
 
-def is_bad (i j k : ℕ) : Prop :=
-  is_perfect_square (i * j * k)
+instance : DecidablePred (@IsSquare ℕ _) :=
+  fun m => decidable_of_iff' (Nat.sqrt m * Nat.sqrt m = m) <| by
+    simp_rw [←Nat.exists_mul_self m, IsSquare, eq_comm]
 
-example : is_bad 2 3 6 := by
-  use 6
-  norm_num
+-- set_option maxRecDepth 10000
+-- set_option maxHeartbeats 1000000
+
+
+-- def is_bad (i j k : ℕ) : Prop :=
+--   is_perfect_square (i * j * k)
+
+
+def set1 : Finset ℕ := {1, 4, 9}
+def set2 : Finset ℕ := {2, 6, 12}
+def set3 : Finset ℕ := {3, 5, 15}
+def set4 : Finset ℕ := {7, 8, 14}
+
+
+example : set1 ∩ set2 = ∅  := by
+  simp [set1, set2]
   done
 
-def set1 : Set ℕ := {1, 4, 9}
-def set2 : Set ℕ := {2, 6, 12}
-def set3 : Set ℕ := {3, 5, 15}
-def set4 : Set ℕ := {7, 8, 14}
-
-theorem disjoint_sets (a b : Set ℕ) (h : Disjoint a b) : ∀ x, x ∈ a → x ∉ b := by
-
-  intro x hx
-  sorry
-  done
-
-
-
-example : Disjoint set1 set2 := by
-  unfold Disjoint
-  intro x hx
-  simp at *
-  intro h
-  apply?
-  sorry
-  done
+-- example : Disjoint set1 set2 := by
+--   unfold Disjoint
+--   intro x hx
+--   simp at *
+--   intro h
+--   apply Set.subset_inter h hx
+--   done
 
 example : Disjoint set1 set2 ∧ Disjoint set1 set3 ∧ Disjoint set1 set4 ∧ Disjoint set2 set3 ∧ Disjoint set2 set4 ∧ Disjoint set3 set4 := by
   simp [set1, set2, set3, set4]
-  sorry
   done
 
--- if k=15, in general we can take ceil(√k)-1 instead of 3
-example {n : ℕ} : n ^ 2 ≠ 15 := by
-  have hn := le_or_lt n 3
-  obtain hn' | hn' := hn
-  · apply @Nat.ne_of_lt
-    calc
-      n ^ 2 ≤ 3 ^ 2 := by rel [hn']
-      _ < 15 := by norm_num
-  · have h₁ : n ≥ 4 := hn'
-    norm_num at hn'
-    symm; apply @Nat.ne_of_lt
-    calc
-      n^2 ≥ 4^2 := by rel [h₁]
-      _ > 15 := by norm_num
-    done
 
 
 def my_set : Finset ℕ := range 16 \ singleton 0
 
 def no_three_square_product (s : Finset ℕ) : Prop :=
-  ∀ x y z : s, x ≠ y ∧ y ≠ z ∧ z ≠ x → ¬is_perfect_square (x * y * z)
+  ∀ x y z : s, x ≠ y ∧ y ≠ z ∧ z ≠ x → ¬IsSquare (x * y * z : ℕ)
 
-theorem small_elements :
+instance : DecidablePred no_three_square_product := fun _ => Fintype.decidableForallFintype
+
+theorem main : no_three_square_product {1, 4, 5, 6, 7, 10, 11, 12, 13, 14} := by
+  sorry
+  done
+
+
+theorem small_elementss :
   ∃ s : Finset ℕ, s ⊆ my_set ∧ no_three_square_product s := by
     use {2, 3, 4, 5}
     simp
-    unfold no_three_square_product
-    simp
-    norm_num
-    sorry
     done
 
 -- theorem ten_elements :
