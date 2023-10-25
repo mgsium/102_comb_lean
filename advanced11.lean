@@ -66,22 +66,6 @@ def calc_Bᵢ (i : ℕ) (X A : Finset ℕ) : Finset ℕ := match i with
 #eval calc_Bᵢ 2 { 1, 2, 3 } { 1, 2 }
 #eval calc_Bᵢ 3 { 1, 2, 3 } { 1, 2 }
 
-def nat_num_set (i: ℕ) : Finset ℕ := match i with
-  | 0   => {0}
-  | k+1 => nat_num_set (k) ∪ {i}
-
-lemma nat_num_mono (i: ℕ) : nat_num_set (i) ⊆ nat_num_set (i + 1) := by
-  match i with
-  | 0 =>
-    unfold nat_num_set
-    simp
-  | k+1 =>
-    intros x h
-    unfold nat_num_set
-    norm_num
-    apply Or.inl
-    exact h
-  done
 
 lemma calc_Bᵢ_threshold (X A : Finset ℕ) (i: ℕ) (h: X.card < i)
   : calc_Bᵢ i X A = calc_Bᵢ (i + 1) X A := by
@@ -154,20 +138,58 @@ lemma calc_Bᵢ_i_geq_card_X (X A : Finset ℕ)
   done
 -/
 
+
+def nat_num_set (i: ℕ) : Finset ℕ := match i with
+  | 0   => {0}
+  | k+1 => nat_num_set (k) ∪ {i}
+
+lemma nat_num_mono (i: ℕ) : nat_num_set (i) ⊆ nat_num_set (i + 1) := by
+  match i with
+  | 0 =>
+    unfold nat_num_set
+    simp
+  | k+1 =>
+    intros x h
+    unfold nat_num_set
+    norm_num
+    apply Or.inl
+    exact h
+  done
+
+def fix_five (i : ℕ) : Finset ℕ := match i with
+  | 0   => {0}
+  | k+1 => if k+1<5 then
+    nat_num_set (k) ∪ {i}
+    else nat_num_set (5)
+
+
+lemma pain (a b : ℕ) (h : a≥3) : a + b = b + a := by
+  by_cases
+  sorry
+  sorry
+  sorry
+--lemma ree (i : ℕ) (h : i≥5): fix_five i = fix_five 5 := by
+--  induction generalising i
+--  . contradiction
+
+
+
+  done
+
+
 lemma calc_Bᵢ_zero (X A : Finset ℕ)
   : calc_Bᵢ 0 X A = ∅ := rfl
 
 lemma calc_Bᵢ_i_geq_card_X (X A : Finset ℕ) (i : ℕ) (h : i ≥ card X)
   : calc_Bᵢ i X A = calc_Bᵢ (card X) X A := by
+
   induction i with
   | zero =>
     norm_num at h
     rw [h]
     rfl
   | succ n ih =>
-    rw [← calc_Bᵢ_threshold]
-    . sorry
-    . sorry
+
     done
 
 def adv_11_ith_step (X A : Finset ℕ) (i : ℕ) :=
