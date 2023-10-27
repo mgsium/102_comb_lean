@@ -1,3 +1,4 @@
 *.olean
 build/*
 lake-packages/*
+*.pdf
