@@ -24,7 +24,7 @@ to ensure M remains good, it's necessary to remove a minimum of two additional n
 which contradicts the earlier assumption that |M| equals 11. Thus, the assumption is incorrect and m is less than 10.
 
 Upon closer examination, the set {1, 4, 5, 6, 7, 10, 11, 12, 13, 14} meets the problem's criteria.
-Therefore, 10 is the upper limit for the number of elements in M.
+Therefore, 10 isℤ) (h₀ : n ≥ 4) the upper limit for the number of elements in M.
 -/
 
 instance : DecidablePred (@IsSquare ℕ _) :=
@@ -62,23 +62,41 @@ example : Disjoint set1 set2 ∧ Disjoint set1 set3 ∧ Disjoint set1 set4 ∧ D
 
 
 
-def my_set : Finset ℕ := range 16 \ singleton 0
+def my_set : Finset ℕ := erase (range 16) 0
+
 
 def is_bad (i j k : ℕ) : Prop :=
   IsSquare (i * j * k : ℕ) ∧ i ∈ my_set ∧ j ∈ my_set ∧ k ∈ my_set
-
-theorem no_bad_triplet_with_5 : ∀ j k, ¬ is_bad 5 j k := by
-  sorry
-  done
-
--- example : is_bad 1  4  9  := by
---   simp [is_bad]
---   done
 
 def no_three_square_product (s : Finset ℕ) : Prop :=
   ∀ x y z : s, x ≠ y ∧ y ≠ z ∧ z ≠ x → ¬IsSquare (x * y * z : ℕ)
 
 instance : DecidablePred no_three_square_product := fun _ => Fintype.decidableForallFintype
+
+-- def is_bad (s : Finset ℕ) (h : s ⊆ my_set) (h1: s.card = 3) : Prop :=
+--   ¬ no_three_square_product s
+
+instance (x : my_set) : OfNat my_set x := by
+  simp [my_set]
+  sorry
+  done
+
+theorem no_bad_triplet_with_5 : ∀ j k : my_set, ¬ is_bad 5 j k := by
+  simp [no_three_square_product]
+  unfold is_bad
+  intro j k
+  simp [my_set]
+  have j = 10 ∨ k = 10 := by
+    sorry
+    done
+  sorry
+  done
+
+example : is_bad 1:my_set  4  9  := by
+  simp [is_bad]
+  done
+
+
 
 -- lemma two : ¬∃
 
