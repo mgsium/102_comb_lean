@@ -1,2 +1,5 @@
 *.olean
 *.pdf
+lake-packages/Cli
+lake-packages/Qq
+lake-packages/proofwidgets
