@@ -22,22 +22,8 @@ def range_from_to (a b : ℕ) : Finset ℕ :=
 def four_to_n (n : ℕ) : Finset ℕ :=
   range_from_to 4 (n+1)
 
--- n; {4,5,6,...,n}
--- c; cardinality of subsets
-def all_c_subsets (c n : ℕ) : Finset (Finset ℕ) :=
-  filter (λ X => card X = c) (four_to_n n).powerset
-
-def tri_prop_c_subsets (n c : ℕ) : Finset (Finset ℕ) :=
-  filter (λ X => (tri_prop X) ∧ (card X = c)) (four_to_n n).powerset
-
-#eval tri_prop_c_subsets 7 3
-#eval tri_prop_c_subsets 12 3
-
-#eval all_c_subsets 2 5
-#eval all_c_subsets 2 8
-
 lemma four_to_n_subset {n : ℕ} : four_to_n n ⊆ four_to_n (n+1) := by
-  unfold four_to_n
+  unfold four_to_n range_from_to
   intro x h
   simp at *
   constructor
@@ -45,16 +31,8 @@ lemma four_to_n_subset {n : ℕ} : four_to_n n ⊆ four_to_n (n+1) := by
   . exact h.right
   done
 
-lemma c_subset (c n : ℕ) : (all_c_subsets c n) ⊆ (all_c_subsets c (n+1)):= by
-  unfold all_c_subsets
-  intro x
-  simp
-  intro h h₁
-  constructor
-  . exact Finset.Subset.trans h (four_to_n_subset)
-  . exact h₁
-  done
-
+-- n; {4,5,6,...,n}
+-- c; cardinality of subsets
 def all_c_subsets_satisfy_tri_prop (c n : ℕ) : Prop :=
   ∀(X:Finset ℕ), (X ⊆ four_to_n n) ∧ (card X = c) → tri_prop X
 
@@ -85,23 +63,17 @@ lemma counterexample_upwards (c k : ℕ) :
   . exact h.2
   done
 
-lemma geq_254_no_tri_prop {n : ℕ} : n ≥ 254 → ¬all_c_subsets_satisfy_tri_prop 10 n := by
-  intro h
+theorem intro23 (n : ℕ)
+  : n≥254 → n∉{i:ℕ | all_c_subsets_satisfy_tri_prop 10 i} := by
+  simp
+  intro g
   induction' n with d hd
   . contradiction
-  . sorry
-  done
-
-def all_c_subsets_satisfy_tri_prop' (c n : ℕ) : Bool
-  := all_c_subsets c n = tri_prop_c_subsets c n
-
-def n_set : Set ℕ := {i:ℕ | all_c_subsets_satisfy_tri_prop 10 i}
-
-theorem intro23 (n : ℕ) : n≥254 → n∉n_set := by
-  unfold n_set
-  simp
-  intro h
-  match n with
-  | 254 => exact intro23_254counterexample
-  | k+1 => apply (counterexample_upwards 10 k); sorry
+  . by_cases 254 = succ d
+    . rw [← h]
+      exact intro23_254counterexample
+    . have : d ≥ 254 := by
+        exact lt_succ.mp $ Nat.lt_of_le_of_ne g h
+      apply (counterexample_upwards 10 d)
+      exact hd this
   done
