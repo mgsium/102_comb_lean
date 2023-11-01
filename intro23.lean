@@ -5,15 +5,10 @@ open Set
 open Finset
 open Nat
 
-set_option maxHeartbeats 10000
+set_option maxHeartbeats 200000
 
 def tri_ineq (a b c : ℕ) : Bool :=
   a + b > c
-
-lemma tri_ineq_symm (a b c : ℕ) : tri_ineq a b c = tri_ineq b a c := by
-  unfold tri_ineq
-  rw [add_comm]
-  done
 
 def tri_prop (X : Finset ℕ) : Bool :=
   ∃ a b c : X, a≠b ∧ b≠c ∧ c≠a
@@ -21,22 +16,19 @@ def tri_prop (X : Finset ℕ) : Bool :=
   ∧ tri_ineq b c a
   ∧ tri_ineq c a b
 
-def four_to_n (n : ℕ) : Finset ℕ :=
-  (Finset.range (n+1)) \ {0,1,2,3}
-  -- {i : ℕ | 4≤i ∧ i≤n}'(by linarith)
+def range_from_to (a b : ℕ) : Finset ℕ :=
+  (Finset.range (b)) \ (Finset.range (a))
 
-def finset_max (S : Finset ℕ) : ℕ :=
-  match Finset.max S with
-  | some a => a
-  | none => 0
+def four_to_n (n : ℕ) : Finset ℕ :=
+  range_from_to 4 (n+1)
 
 -- n; {4,5,6,...,n}
 -- c; cardinality of subsets
 def all_c_subsets (c n : ℕ) : Finset (Finset ℕ) :=
-  filter (card · = c) (four_to_n n).powerset
+  filter (λ X => card X = c) (four_to_n n).powerset
 
 def tri_prop_c_subsets (n c : ℕ) : Finset (Finset ℕ) :=
-  filter (fun X => (tri_prop X) ∧ (card X = c)) (four_to_n n).powerset
+  filter (λ X => (tri_prop X) ∧ (card X = c)) (four_to_n n).powerset
 
 #eval tri_prop_c_subsets 7 3
 #eval tri_prop_c_subsets 12 3
@@ -44,7 +36,7 @@ def tri_prop_c_subsets (n c : ℕ) : Finset (Finset ℕ) :=
 #eval all_c_subsets 2 5
 #eval all_c_subsets 2 8
 
-lemma four_to_n_subset (n : ℕ) : four_to_n n ⊆ four_to_n (n+1) := by
+lemma four_to_n_subset {n : ℕ} : four_to_n n ⊆ four_to_n (n+1) := by
   unfold four_to_n
   intro x h
   simp at *
@@ -59,63 +51,57 @@ lemma c_subset (c n : ℕ) : (all_c_subsets c n) ⊆ (all_c_subsets c (n+1)):= b
   simp
   intro h h₁
   constructor
-  . exact Finset.Subset.trans h (four_to_n_subset n)
+  . exact Finset.Subset.trans h (four_to_n_subset)
   . exact h₁
   done
 
-lemma counterexample_upwards (c k : ℕ) :
-    (all_c_subsets 10  k   ) ≠ (tri_prop_c_subsets 10  k   )
-  → (all_c_subsets 10 (k+1)) ≠ (tri_prop_c_subsets 10 (k+1)) := by
-  contrapose
-  push_neg
-  intro h
-  unfold all_c_subsets
-  unfold tri_prop_c_subsets
-
-  --rw [Finset.ext]
-  sorry
-  done
-
-
-/-
 def all_c_subsets_satisfy_tri_prop (c n : ℕ) : Prop :=
-  (all_c_subsets c n) = (tri_prop_c_subsets c n)
+  ∀(X:Finset ℕ), (X ⊆ four_to_n n) ∧ (card X = c) → tri_prop X
 
-theorem intro23_254counterexample (X : Finset ℕ) :
-  ¬all_c_subsets_satisfy_tri_prop 10 254 := by
-  --by_contra h
-  --unfold all_c_subsets_satisfy_tri_prop at h
-  intro h
-  unfold all_c_subsets_satisfy_tri_prop at h
-  --rw [Finset.ext]
-  sorry
-  done
--/
-
-def all_c_subsets_satisfy_tri_prop (c n : ℕ) : Prop := ∀(X:Finset ℕ),
-  (X ⊆ four_to_n n) ∧ (card X = c) → tri_prop X
-
-
-#reduce tri_prop {4, 5, 9, 14, 23, 37, 60, 97, 157, 254}
-#eval tri_prop {4, 5, 9, 14, 23, 37, 60, 97, 157, 254}
-
-theorem intro23_254counterexample (X : Finset ℕ) :
+theorem intro23_254counterexample :
   ¬all_c_subsets_satisfy_tri_prop 10 254 := by
   let Y : Finset ℕ := {4, 5, 9, 14, 23, 37, 60, 97, 157, 254}
-  have h₁ : Y ⊆ four_to_n 254 := (by
+  have h₁ : Y ⊆ four_to_n 254 := by
     unfold four_to_n
     simp
-    )
-  have h₂ : card Y = 10 := (by exact rfl)
-  have h₃ : ¬tri_prop Y := (by sorry) -- this evaluates fine above, need to figure out how to do computation like that in a proof
+  have h₂ : card Y = 10 := by rfl
+  have h₃ : ¬tri_prop Y := by sorry --exact Bool.not_iff_not.mp rfl
   unfold all_c_subsets_satisfy_tri_prop
   push_neg
   use Y
   done
 
+lemma counterexample_upwards (c k : ℕ) :
+    ¬all_c_subsets_satisfy_tri_prop c k
+  → ¬all_c_subsets_satisfy_tri_prop c (k+1) := by
+  unfold all_c_subsets_satisfy_tri_prop
+  push_neg
+  choose Y h
+  use Y
+  repeat (any_goals constructor)
+  . apply Finset.Subset.trans h.1.1
+    exact four_to_n_subset
+  . exact h.1.2
+  . exact h.2
+  done
 
+lemma geq_254_no_tri_prop {n : ℕ} : n ≥ 254 → ¬all_c_subsets_satisfy_tri_prop 10 n := by
+  intro h
+  induction' n with d hd
+  . contradiction
+  . sorry
+  done
 
--- rewrite using all_c_subsets_satisfy_tri_prop predicate
---theorem intro23 (n : ℕ) (X : Finset ℕ)
---  : Finset.max {i | (all_c_subsets 10 n h₀) = (tri_prop_c_subsets 10 n h₀)} = 253 := by
---  done
+def all_c_subsets_satisfy_tri_prop' (c n : ℕ) : Bool
+  := all_c_subsets c n = tri_prop_c_subsets c n
+
+def n_set : Set ℕ := {i:ℕ | all_c_subsets_satisfy_tri_prop 10 i}
+
+theorem intro23 (n : ℕ) : n≥254 → n∉n_set := by
+  unfold n_set
+  simp
+  intro h
+  match n with
+  | 254 => exact intro23_254counterexample
+  | k+1 => apply (counterexample_upwards 10 k); sorry
+  done
