@@ -39,7 +39,7 @@ theorem intro23_254counterexample :
     unfold four_to_n
     simp
   have h₂ : card Y = 10 := by rfl
-  have h₃ : ¬tri_prop Y := by sorry --exact Bool.not_iff_not.mp rfl
+  have h₃ : ¬tri_prop Y := by exact Bool.not_iff_not.mp rfl
   unfold all_c_subsets_satisfy_tri_prop
   push_neg
   use Y
