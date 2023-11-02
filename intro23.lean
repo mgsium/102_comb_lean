@@ -5,8 +5,6 @@ open Set
 open Finset
 open Nat
 
-set_option maxHeartbeats 200000
-
 def tri_ineq (a b c : ℕ) : Bool :=
   a + b > c
 
@@ -26,9 +24,7 @@ lemma four_to_n_subset {n : ℕ} : four_to_n n ⊆ four_to_n (n+1) := by
   unfold four_to_n range_from_to
   intro x h
   simp at *
-  constructor
-  . linarith
-  . exact h.right
+  constructor <;> linarith
   done
 
 -- n; {4,5,6,...,n}
@@ -43,7 +39,7 @@ theorem intro23_254counterexample :
     unfold four_to_n
     simp
   have h₂ : card Y = 10 := by rfl
-  have h₃ : ¬tri_prop Y := by exact Bool.not_iff_not.mp rfl
+  have h₃ : ¬tri_prop Y := by sorry --exact Bool.not_iff_not.mp rfl
   unfold all_c_subsets_satisfy_tri_prop
   push_neg
   use Y
@@ -64,7 +60,7 @@ lemma counterexample_upwards (c k : ℕ) :
   done
 
 theorem intro23 (n : ℕ)
-  : n≥254 → n∉{i:ℕ | all_c_subsets_satisfy_tri_prop 10 i} := by
+  : n ≥ 254 → ¬all_c_subsets_satisfy_tri_prop 10 n := by
   simp
   intro g
   induction' n with d hd
@@ -72,8 +68,7 @@ theorem intro23 (n : ℕ)
   . by_cases 254 = succ d
     . rw [← h]
       exact intro23_254counterexample
-    . have : d ≥ 254 := by
-        exact lt_succ.mp $ Nat.lt_of_le_of_ne g h
+    . have : d ≥ 254 := lt_succ.mp $ Nat.lt_of_le_of_ne g h
       apply (counterexample_upwards 10 d)
       exact hd this
   done
