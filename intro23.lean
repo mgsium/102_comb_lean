@@ -59,8 +59,8 @@ lemma counterexample_upwards (c k : ℕ) :
   . exact h.2
   done
 
-theorem intro23 (n : ℕ)
-  : n ≥ 254 → ¬all_c_subsets_satisfy_tri_prop 10 n := by
+theorem intro23 (n : ℕ) :
+  n ≥ 254 → ¬all_c_subsets_satisfy_tri_prop 10 n := by
   simp
   intro g
   induction' n with d hd
