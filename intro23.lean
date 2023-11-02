@@ -1,7 +1,5 @@
 import Mathlib.Tactic
 
-open List
-open Set
 open Finset
 open Nat
 
