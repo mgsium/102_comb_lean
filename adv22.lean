@@ -1,4 +1,4 @@
-import Mathlib
+import Mathlib.Tactic
 
 open Finset Nat
 
@@ -119,18 +119,6 @@ theorem small_elementss :
 --     done
 
 theorem max_elements_with_condition {s: Finset ℕ}:
-max ({ card s | s ⊆ my_set ∧ no_three_square_product s } : Finset ℕ) := by
+  max (image card $ my_set.powerset.filter no_three_square_product) = 10:= by
   sorry
-  done∃
-
-  ∃⊂ℕ
-
-theorem max_elements_with_condition3 :
-   ∃my_set ∧ card s = 3 ∧o_three_square_product s := by
-     sorry
-     done
-
--- theorem max_elements_with_condition :
---   ∀ s : Finset ℕ, s ⊆ my_set → (no_three_square_product s → max s.card = 10) := by
---     sorry
---     done
+  done
