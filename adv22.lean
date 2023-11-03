@@ -76,6 +76,7 @@ instance : DecidablePred no_three_square_product := fun _ => Fintype.decidableFo
 -- def is_bad (s : Finset ℕ) (h : s ⊆ my_set) (h1: s.card = 3) : Prop :=
 --   ¬ no_three_square_product s
 
+
 instance (x : my_set) : OfNat my_set x := by
   simp [my_set]
   sorry
@@ -87,8 +88,8 @@ theorem no_bad_triplet_with_5 : ∀ j k : my_set, ¬ is_bad 5 j k := by
   intro j k
   simp [my_set]
   have j = 10 ∨ k = 10 := by
+    exact j
     sorry
-    done
   sorry
   done
 
