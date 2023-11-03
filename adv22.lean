@@ -119,6 +119,6 @@ theorem small_elementss :
 --     done
 
 theorem max_elements_with_condition {s: Finset ℕ}:
-  max (image card $ my_set.powerset.filter no_three_square_product) = 10:= by
+  Finset.max (image card $ my_set.powerset.filter no_three_square_product) = 10:= by
   sorry
   done
