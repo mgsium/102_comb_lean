@@ -2,7 +2,8 @@ import Mathlib
 
 open Finset Nat
 
---[IMO Shortlist 1994] A subset M of {1,2,3,...,15} does not contain three elements whose product is a perfect square. Determine the maximum number of elements in M.
+-- [IMO Shortlist 1994] A subset M of {1,2,3,...,15} does not contain three
+-- elements whose product is a perfect square. Determine the maximum number of elements in M.
 
 /-
 Solution: (Adapted from: 102 Combinatorial Problems by T. Andreescu, Z. Feng):
@@ -12,19 +13,20 @@ and doesn't contain three elements whose product forms a perfect square. The obj
 where M is good. If m represents this maximum, a triple of numbers {i, j, k}, 1 ≤ i < j < k ≤ 15, is called 'bad'
 if the product ijk is a perfect square.
 
-Initially, prove m < 11. Given the disjoint bad triples B1 = {1, 4, 9}, B2 = {2, 6, 12}, B3 = {3, 5, 15}, and B4 = {7, 8, 14},
+Initially, prove m < 11. Given the disjoint bad triples B₁ = {1, 4, 9}, B₂ = {2, 6, 12}, B₃ = {3, 5, 15}, and B₄ = {7, 8, 14},
 if |M| is 12, all three numbers in at least one of these triples are in M. Consequently, M is not good if |M| ≥ 12, which leads
 to the conclusion that m < 11.
 
-If m equals 11, then for a good set M with |M| being 11, M is the set difference S - {a1, a2, a3, a4},
-where each ai belongs to a corresponding Bi, for i in {1, 2, 3, 4}. Given this, 10 is an element of M. Since 10 belongs to M
-and considering the bad triples B1, B4, B5, and B6, where 10 is the only recurring element, M equals S - {b1, b4, b5, b6}.
+If m equals 11, then for a good set M with |M| being 11, M is the set difference S - {a₁, a₂, a₃, a₄},
+where each ai belongs to a corresponding Bᵢ, for i in {1, 2, 3, 4}. Given this, 10 is an element of M. Since 10 belongs to M
+and considering the bad triples B1, B4, B5, and B6, where 10 is the only recurring element, M equals S - {b₁, b₄, b₅, b₆}.
 The numbers 1, 4, and 9 are absent from M. Given the presence of two separate bad triples {2, 3, 6} and {7, 8, 14},
 to ensure M remains good, it's necessary to remove a minimum of two additional numbers. This means |M| is less than 10,
 which contradicts the earlier assumption that |M| equals 11. Thus, the assumption is incorrect and m is less than 10.
 
-Upon closer examination, the set {1, 4, 5, 6, 7, 10, 11, 12, 13, 14} meets the problem's criteria.
-Therefore, 10 isℤ) (h₀ : n ≥ 4) the upper limit for the number of elements in M.
+Hence, m ≤ 10.
+The set {1, 4, 5, 6, 7, 10, 11, 12, 13, 14} satisfies the problem's criteria.
+Therefore, max(m) = 10.
 -/
 
 instance : DecidablePred (@IsSquare ℕ _) :=
@@ -33,8 +35,6 @@ instance : DecidablePred (@IsSquare ℕ _) :=
 
 -- set_option maxRecDepth 10000
 -- set_option maxHeartbeats 1000000
-
-
 
 
 def set1 : Finset ℕ := {1, 4, 9}
@@ -82,20 +82,18 @@ instance (x : my_set) : OfNat my_set x := by
   sorry
   done
 
-theorem no_bad_triplet_with_5 : ∀ j k : my_set, ¬ is_bad 5 j k := by
+theorem no_bad_triplet_with_5 : ∃ ({ 5, j, k } : Finset ℕ) ⊆ my_set, ¬ is_bad 5 j k := by
   simp [no_three_square_product]
-  unfold is_bad
   intro j k
   simp [my_set]
-  have j = 10 ∨ k = 10 := by
-    exact j
+  have: j = 10 ∨ k = 10 := by
     sorry
   sorry
   done
 
-example : is_bad 1:my_set  4  9  := by
-  simp [is_bad]
-  done
+-- example : is_bad 1:my_set  4  9  := by
+--   simp [is_bad]
+--   done
 
 
 
@@ -120,7 +118,19 @@ theorem small_elementss :
 --     by_cases h1 :
 --     done
 
-theorem max_elements_with_condition :
-  ∀ s : Finset ℕ, s ⊆ my_set → (no_three_square_product s → max s.card = 10) := by
-    sorry
-    done
+theorem max_elements_with_condition {s: Finset ℕ}:
+max ({ card s | s ⊆ my_set ∧ no_three_square_product s } : Finset ℕ) := by
+  sorry
+  done∃
+
+  ∃⊂ℕ
+
+theorem max_elements_with_condition3 :
+   ∃my_set ∧ card s = 3 ∧o_three_square_product s := by
+     sorry
+     done
+
+-- theorem max_elements_with_condition :
+--   ∀ s : Finset ℕ, s ⊆ my_set → (no_three_square_product s → max s.card = 10) := by
+--     sorry
+--     done
