@@ -1,7 +1,23 @@
+
+
 import Mathlib.Tactic
+
+/-
+# Problem Statement
+
+> "A set of positive numbers has the _triangle property_ if it has three
+> distinct elements that are the lengths of the sides of a triangle whose area
+> is positive. Consider sets {4,5,6,...,n} of consecutive positive integers, all
+> of whose ten-element subsets have the triangle property. What is the largest
+> possible value of n?"
+
+-/
+
+
 
 open Finset
 open Nat
+open List
 
 def tri_ineq (a b c : ℕ) : Bool :=
   a + b > c
@@ -30,8 +46,8 @@ lemma four_to_n_subset {n : ℕ} : four_to_n n ⊆ four_to_n (n+1) := by
 def all_c_subsets_satisfy_tri_prop (c n : ℕ) : Prop :=
   ∀(X:Finset ℕ), (X ⊆ four_to_n n) ∧ (card X = c) → tri_prop X
 
-theorem intro23_254counterexample :
-  ¬all_c_subsets_satisfy_tri_prop 10 254 := by
+theorem intro23_254counterexample
+  : ¬all_c_subsets_satisfy_tri_prop 10 254 := by
   let Y : Finset ℕ := {4, 5, 9, 14, 23, 37, 60, 97, 157, 254}
   have h₁ : Y ⊆ four_to_n 254 := by
     unfold four_to_n
@@ -43,8 +59,8 @@ theorem intro23_254counterexample :
   use Y
   done
 
-lemma counterexample_upwards (c k : ℕ) :
-    ¬all_c_subsets_satisfy_tri_prop c k
+lemma counterexample_upwards (c k : ℕ)
+  : ¬all_c_subsets_satisfy_tri_prop c k
   → ¬all_c_subsets_satisfy_tri_prop c (k+1) := by
   unfold all_c_subsets_satisfy_tri_prop
   push_neg
@@ -57,8 +73,8 @@ lemma counterexample_upwards (c k : ℕ) :
   . exact h.2
   done
 
-theorem intro23 (n : ℕ) :
-  n ≥ 254 → ¬all_c_subsets_satisfy_tri_prop 10 n := by
+theorem intro23_upper_bound (n : ℕ)
+  : n ≥ 254 → ¬all_c_subsets_satisfy_tri_prop 10 n := by
   simp
   intro g
   induction' n with d hd
@@ -70,3 +86,30 @@ theorem intro23 (n : ℕ) :
       apply (counterexample_upwards 10 d)
       exact hd this
   done
+
+
+lemma name (X : List ℕ) : ¬tri_prop X.toFinset ∧ card X.toFinset = 10
+  → min {n | ¬all_c_subsets_satisfy_tri_prop 10 n} ≥ 254 := by
+  sorry
+  done
+
+theorem intro23_lower_bound (n : ℕ) (a₁ a₂ a₃ a₄ a₅ a₆ a₇ a₈ a₉ a₁₀ : ℕ)
+  : n ≤ 253 → all_c_subsets_satisfy_tri_prop 10 n := by
+  contrapose
+  push_neg
+  intro h
+  unfold all_c_subsets_satisfy_tri_prop at h
+  simp at h
+  let (X : List ℕ) := [a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈,a₉,a₁₀]-- (a_1,a_10 ∈ [N])
+  have h₃ : ¬tri_prop X.toFinset := by sorry
+  have c₀ : card X.toFinset = 10 := by sorry
+  wlog h₂ : List.Sorted Nat.lt X
+  sorry
+  sorry
+  done
+
+/-
+let (x : Finset ℕ) := {a₁,a₂,a₃,a₄,a₅,a₆,a₇,a₈,a₉,a₁₀}
+wlog h₀ : a₁<a₂ ∧ a₂<a₃ ∧ a₃<a₄ ∧ a₄<a₅ ∧ a₅<a₆
+        ∧ a₆<a₇ ∧ a₇<a₈ ∧ a₈<a₉ ∧ a₉<a₁₀
+-/
