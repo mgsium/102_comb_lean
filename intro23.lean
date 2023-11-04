@@ -88,6 +88,27 @@ theorem intro23_upper_bound (n : ℕ)
   done
 
 
+
+
+
+
+
+
+
+
+lemma exists_solution : ∃n, all_c_subsets_satisfy_tri_prop 10 n := by
+  unfold all_c_subsets_satisfy_tri_prop
+  have h : ¬(∀X, (X ⊆ four_to_n 0 ∧ card X = 10)) := by
+    simp
+    use ∅
+    simp
+  use 0
+  by_contra g
+  simp at g
+  done
+
+#eval Nat.find exists_solution
+
 lemma name (X : List ℕ) : ¬tri_prop X.toFinset ∧ card X.toFinset = 10
   → min {n | ¬all_c_subsets_satisfy_tri_prop 10 n} ≥ 254 := by
   sorry
