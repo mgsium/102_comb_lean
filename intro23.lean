@@ -2,14 +2,14 @@
 
 import Mathlib.Tactic
 
-/-
-# Problem Statement
+/-!
+# Intro 23 (p.34) | [AIME 2001]
 
-> "A set of positive numbers has the _triangle property_ if it has three
+> A set of positive numbers has the _triangle property_ if it has three
 > distinct elements that are the lengths of the sides of a triangle whose area
 > is positive. Consider sets {4,5,6,...,n} of consecutive positive integers, all
 > of whose ten-element subsets have the triangle property. What is the largest
-> possible value of n?"
+> possible value of n?
 
 -/
 
