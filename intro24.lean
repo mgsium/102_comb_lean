@@ -14,14 +14,8 @@ open Nat
 -- need to work with the set of naturals in this question, not type.
 def set_ℕ : Set ℕ := {n | n:ℕ}
 
-
 def disjoint_nat_union (A B : Set ℕ) : Prop :=
   (A ∩ B = ∅) ∧ (A ∪ B = set_ℕ)
-
-
-lemma test (a b : ℕ) (S : Finset ℕ) (h : a∈S) (g : b∈S): {a, b}⊆S := by
-  done
-
 
 theorem intro24 (n a b: ℕ) (A B : Set ℕ) (h : disjoint_nat_union A B):
   ∀n, ∃ a b, a≠b ∧ a>n ∧ b>n
@@ -62,12 +56,4 @@ theorem intro24 (n a b: ℕ) (A B : Set ℕ) (h : disjoint_nat_union A B):
       . sorry
       sorry
   . sorry
-  done
-
-
-
-
-lemma ree : ¬(({1,2,3}:Set ℕ) ⊆ ∅) := by
-  refine Nonempty.not_subset_empty ?_
-  simp
   done
