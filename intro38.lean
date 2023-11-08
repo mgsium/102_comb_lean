@@ -21,13 +21,43 @@ is even. Then, for
 
 -/
 
+open BigOperators
+
+theorem even_sum2 {n : ℕ} (X : Finset ℕ) (h : Even $ card X) : Even (∑ x in X, x) := by
+  unfold Even
+  apply?
+  done
+
+
+
+instance : Membership ℕ (Finset ℕ) := by
+  sorry
+  done
+
+
 noncomputable
 instance {V : Finset ℕ} {G : SimpleGraph V} {v : V}
   : Fintype (SimpleGraph.neighborSet G v) :=
     Fintype.ofFinite ↑(SimpleGraph.neighborSet G v)
 
-theorem intro38 {V : Finset ℕ} (n : ℕ) (G : SimpleGraph V)
+theorem intro38 {V : Finset ℕ} (n : ℕ) (G : SimpleGraph V) (hₓ : n≥2)
   (h : ∀(v:V), G.degree v % 2 = 0) (c : V.card = 2 * n)
-  : ∃(a b : V), ((G.neighborFinset a ∩ G.neighborFinset b).card % 2 = 0) := by
+  : ∃(a b : V), (card (G.neighborFinset a ∩ G.neighborFinset b) % 2 = 0) := by
+  by_contra g
+  push_neg at g
+  have h₀ : ∀(p : V), (card (G.neighborFinset p)) % 2 = 0 := h
+  have h₁ : ∀(p : V), (card (V.attach.erase p)) % 2 = 1 := by
+    simp
+    intro a H
+    rw [c]
+
+    done
+  have h₂ : ∀(p : V), (card (G.neighborFinset p)) % 2 = 0 := by
+    sorry
+    done
+  have h₃ : ∀(p : V), (card (V.attach.erase p \ G.neighborFinset p)) % 2 = 0 := by
+    intro p
+    sorry
+    done
   sorry
   done
