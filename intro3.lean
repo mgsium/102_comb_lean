@@ -2,6 +2,14 @@ import Mathlib.Tactic
 
 variable (n : ℕ)
 
+/-!
+# Intro 3 (pp. 18) | [Revista Matematica Timişoara]
+Let n be an odd integer greater than 1. Prove that the sequence [(n choose 1) ,..., (n choose (n-1)/2)] contains an odd number of odd numbers.
+
+## Solution
+The sum of the numbers in the given sequence equals 2^(n-1)-1, which is odd; hence, the result follows.
+-/
+
 open Nat
 open BigOperators
 open Finset
