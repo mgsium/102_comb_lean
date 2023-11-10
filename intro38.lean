@@ -60,18 +60,24 @@ theorem intro38 {V : Finset ℕ} (n : ℕ) (G : SimpleGraph V) (b : n≥1)
   have h₁ : ∀(p : V), (card $ V.attach.erase p) % 2 = 1 := by
     simp
     intro a _
-    rw [c, ← Nat.odd_iff]
+    rw [c, ← odd_iff]
     unfold Odd
     use n-1
     match n with
     | 0   => contradiction
-    | k+1 => rw [Nat.mul_add]; simp
+    | k+1 => rw [mul_add]; simp
     done
   --B := (V ∖ {p}) ∖ A
   have h₂ : ∀(p : V), (card $ V.attach.erase p \ G.neighborFinset p) % 2 = 1 := by
     intro p
     rw [card_sdiff]
-    . sorry
+    . simp
+      rw [c, ← odd_iff]
+      unfold Odd
+      use (degree G p)-1
+      match n with
+      | 0   => contradiction
+      | k+1 => sorry
     . intro x
       simp
       exact fun a ↦ Adj.ne (id (adj_symm G a))
@@ -83,13 +89,16 @@ theorem intro38 {V : Finset ℕ} (n : ℕ) (G : SimpleGraph V) (b : n≥1)
     exact fun p q a ↦ (fun n ↦ (ree n).mp) (card (neighborFinset G q ∩ neighborFinset G p)) (g q p)
     done
   have h₅ : ∀(p q : V), q ∈ (V.attach.erase p \ G.neighborFinset p)
-    → card (G.neighborFinset q ∩ (V.attach.erase p \ G.neighborFinset p)) % 2 = 1 := by
+    → card (G.neighborFinset q ∩ (V.attach.erase p \ G.neighborFinset p)) % 2 = 1
+    := by
     sorry
     done
+  /-
   have h₆ : ∀(p : V), ∑ q in V.attach.erase p \ G.neighborFinset p,
     card(G.neighborFinset q ∩ (V.attach.erase p \ G.neighborFinset p))
     = 2 * ∑ v in V.attach.erase p \ G.neighborFinset p, card(G.neighborFinset v)
     := by
     sorry
     done
+  -/
   done
