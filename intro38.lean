@@ -17,14 +17,14 @@ people who have an even number of common friends at the party.
 
 Suppose that every pair of distinct people share an odd number of friends, and
 consider the set A of friends of some person p, and let B be the set of everyone
-else (excluding p). It follows that |B| is odd since |A| is even and A, B, and
-{p} partition V. Then, for each person q in B, q is not friends with p by the
-construction of B, and the number of friends of q in common with p is odd by
-assumption, so q has an odd number of friends in A, and hence also has an odd
-number of friends in B, since every person has an even number of friends. Now,
-the sum of the number of friends in B over all q's in B is twice the number of
-friends amongst people in B by Euler's handshaking lemma, contradicting that |B|
-is odd.
+else (excluding p) i.e. the complement of the closed neighbourhood of p. It
+follows that |B| is odd since |A| is even and A, B, and {p} partition V. Then,
+for each person q in B, q is not friends with p by the construction of B, and
+the number of friends of q in common with p is odd by assumption, so q has an
+odd number of friends in A, and hence also has an odd number of friends in B,
+since every person has an even number of friends. Now, the sum of the number of
+friends in B over all q's in B is twice the number of friendships amongst people
+in B by Euler's handshaking lemma, contradicting that |B| is odd.
 
 -/
 
@@ -48,6 +48,7 @@ lemma V_partition (V : Finset ℕ) (G : SimpleGraph V)
 
 lemma ree (n : ℕ): n % 2 ≠ 0 ↔ n % 2 = 1 := by
   simp
+
 
 
 theorem intro38 {V : Finset ℕ} (n : ℕ) (G : SimpleGraph V) (b : n≥1)
@@ -93,12 +94,11 @@ theorem intro38 {V : Finset ℕ} (n : ℕ) (G : SimpleGraph V) (b : n≥1)
     := by
     sorry
     done
-  /-
-  have h₆ : ∀(p : V), ∑ q in V.attach.erase p \ G.neighborFinset p,
+
+  have h₆ : ∀(p : V), ∑ q in (V.attach.erase p \ G.neighborFinset p),
     card(G.neighborFinset q ∩ (V.attach.erase p \ G.neighborFinset p))
-    = 2 * ∑ v in V.attach.erase p \ G.neighborFinset p, card(G.neighborFinset v)
+    = 2 * -- number of edges in subgraph (V.attach.erase p \ G.neighborFinset p)
     := by
     sorry
     done
-  -/
   done
