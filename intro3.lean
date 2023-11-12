@@ -14,13 +14,9 @@ open Finset
 
 variable (n : ℕ)
 
-lemma aux1 : ∑ k in range (n+1), choose n k = 2^n := by
-  exact sum_range_choose n
-  done
+-- we first show that the sum of the given sequence is 2^(n-1)-1
 
-def my_set2 : Finset ℕ := Icc 1 (n-1)
-
-lemma hello (h: 1 < n): ∑ k in Ico 0 (n+1), choose n k = choose n 0  + ∑ k in Ico 1 n, choose n k + choose n n := by
+lemma split_sum (h: 1 < n): ∑ k in Ico 0 (n+1), choose n k = choose n 0  + ∑ k in Ico 1 n, choose n k + choose n n := by
   rw [sum_eq_sum_Ico_succ_bot]
   rw [sum_Ico_succ_top (by linarith)]
   norm_num
@@ -28,26 +24,19 @@ lemma hello (h: 1 < n): ∑ k in Ico 0 (n+1), choose n k = choose n 0  + ∑ k i
   linarith
   done
 
-example (k:ℕ): Ico 0 k = range k := by
-  simp only [Ico_zero_eq_range]
-  done
-
-lemma aux1' (h: 1 < n): ∑ k in Ico 1 n, choose n k + 2 = 2^n  := by
+lemma aux1 (h: 1 < n): ∑ k in Ico 1 n, choose n k + 2 = 2^n  := by
   rw [← sum_range_choose n, ← Ico_zero_eq_range]
-  simp_rw [hello n h]
+  simp_rw [split_sum n h]
   norm_num
   exact add_comm _ _
   done
 
-def my_set : Finset ℕ := range (1+(n-1)/2) \ singleton 0
-
-
 #check choose_symm
-def my_set9 : Finset ℕ := Ico 1 (Nat.div (n+1) 2)
+def my_set : Finset ℕ := Ico 1 (Nat.div (n+1) 2)
 
-lemma binom_symm (h: 1 < n): 2 * ∑ k in my_set9 n, choose n k
+lemma binom_symm (h: 1 < n): 2 * ∑ k in my_set n, choose n k
   = ∑ k in Ico 1 n, choose n k := by
-  unfold my_set9
+  unfold my_set
   symm
   have g : Nat.div (n+1) 2 ≤ n := by
     sorry
@@ -78,25 +67,7 @@ lemma power_odd (h: n > 1): Odd (2^n - (1:ℚ)) := by
   exact pow_prop n h
   done
 
--- #eval ∑ k in my_set, choose n k
--- #eval 2^(n-1)-1
-
-def binomial_coefficients_set (n : ℕ) : Finset ℕ :=
-(range ((n - 1) / 2)).map ⟨λ k => Nat.choose n (k + 1), by sorry⟩
-
-#eval binomial_coefficients_set 13
-
-def odd_binomials_finset (n : ℕ) : Finset ℕ :=
-filter (λ k => Odd (Nat.choose n k)) (range ((n + 1) / 2) \ singleton 0)
-
-#eval odd_binomials_finset 7
-
 -- if the sum of the elements of a set is odd, then the set contains an odd number of odd numbers.
-
-theorem odd_number_of_odd_numbers {n : ℕ} (h : Odd n) :
-  Odd (card (odd_binomials_finset n)) := by
-  sorry
-  done
 
 theorem odd_filter (set' : Finset ℕ) :
    ∑ k in set', k = ∑ k in (set'.filter Odd), k
@@ -161,4 +132,16 @@ theorem general_odd (set' : Finset ℕ) (h : Odd (∑ k in set', k)) :
   have h2: Even (∑ k in filter (fun x => Odd x) set', k)
     := by exact filter_odd_sum set' h
   apply Even.add h2 h1
+  done
+
+-- we finally prove the main result
+
+def odd_binomials_finset (n : ℕ) : Finset ℕ :=
+filter (λ k => Odd (Nat.choose n k)) (my_set n)
+
+#eval odd_binomials_finset 7
+
+theorem intro3 {n : ℕ} (h : Odd n) :
+  Odd (card (odd_binomials_finset n)) := by
+  sorry
   done
