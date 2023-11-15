@@ -40,9 +40,6 @@ lemma aux1 (h: 1 < n): ∑ k in Ico 1 n, choose n k + 2 = 2^n  := by
 #check choose_symm
 
 
--- lemma nat_is_nat (n:ℕ)(h: Odd n): ((n+1)/ (2:ℚ)) ∈ ℕ := by
---   sorry
---   done
 
 def my_set : Finset ℕ := Ico 1 (Nat.div (n+1) 2)
 
@@ -149,17 +146,7 @@ lemma even_sum (X : Finset ℕ) :even_sum_finset X := by
   unfold even_sum_finset at *
   intro h'
   rw [sum_insert h, even_add]
-  have even_a : Even a := by
-    simp only [h', mem_insert, true_or]
-    done
-  constructor
-  . intro _
-    apply g
-    intro x hₓ
-    apply h'
-    simp [mem_insert, hₓ]
-  . rw [imp_iff_not_or]
-    simp [even_a]
+  simp_all only [mem_insert, or_true, implies_true]
   done
 
 def odd_sum_finset (X: Finset ℕ): Prop :=
@@ -168,7 +155,7 @@ def odd_sum_finset (X: Finset ℕ): Prop :=
 lemma even_sum_of_odd (X : Finset ℕ) : odd_sum_finset X := by
   unfold odd_sum_finset Even Odd
   intro h
-
+  sorry
   -- have empty : odd_sum_finset ∅ := by
   --   simp only [odd_sum_finset]
   --   done
@@ -224,8 +211,8 @@ lemma filter_odd_sum (set' : Finset ℕ) (h: ¬Odd (card (filter Odd set'))):
     obtain ⟨_,h2⟩ := hx
     rw [odd_iff_not_even]
     exact h2
-  apply (odd_sum odd_set h h')
-  exact n
+  apply (even_sum_of_odd odd_set ⟨h, h'⟩)
+  done
 
 lemma filter_even_sum (set' : Finset ℕ):
   Even (∑ k in filter (¬ Odd ·) set', k) := by
@@ -235,7 +222,7 @@ lemma filter_even_sum (set' : Finset ℕ):
     simp at hx
     obtain ⟨_,h2⟩ := hx
     exact h2
-  apply (even_sum even_set rfl h)
+  apply (even_sum even_set h)
   done
 
 theorem odd_number_of_odd_numbers (set' : Finset ℕ) (h : Odd (∑ k in set', k)) :
@@ -245,8 +232,7 @@ theorem odd_number_of_odd_numbers (set' : Finset ℕ) (h : Odd (∑ k in set', k
   rw [odd_filter]
   have h1: Even (∑ k in filter (¬ Odd ·) set', k)
     := by exact filter_even_sum set'
-  -- even odds + even evens = even
   have h2: Even (∑ k in filter (Odd ·) set', k)
-    := by exact filter_odd_sum set'
+    := by exact filter_odd_sum set' h
   apply Even.add h2 h1
   done
