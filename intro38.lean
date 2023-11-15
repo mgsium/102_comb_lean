@@ -44,6 +44,7 @@ lemma V_partition (V : Finset ℕ) (G : SimpleGraph V)
   sorry
   done
 
+--noncomputable
 --def A_set {V : Finset ℕ} {G : SimpleGraph V} (p:V) : Finset {x // x ∈ V} := G.neighborFinset p
 
 lemma ree (n : ℕ): n % 2 ≠ 0 ↔ n % 2 = 1 := by
@@ -92,12 +93,12 @@ theorem intro38 {V : Finset ℕ} (n : ℕ) (G : SimpleGraph V) (b : n≥1)
   have h₅ : ∀(p q : V), q ∈ (V.attach.erase p \ G.neighborFinset p)
     → card (G.neighborFinset q ∩ (V.attach.erase p \ G.neighborFinset p)) % 2 = 1
     := by
-    sorry
+
     done
 
   have h₆ : ∀(p : V), ∑ q in (V.attach.erase p \ G.neighborFinset p),
-    card(G.neighborFinset q ∩ (V.attach.erase p \ G.neighborFinset p))
-    = 2 * -- number of edges in subgraph (V.attach.erase p \ G.neighborFinset p)
+    card (G.neighborFinset q ∩ (V.attach.erase p \ G.neighborFinset p))
+    = 2 -- number of edges in subgraph (V.attach.erase p \ G.neighborFinset p)
     := by
     sorry
     done
