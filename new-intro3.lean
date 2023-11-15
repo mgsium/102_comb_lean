@@ -119,40 +119,13 @@ theorem odd_filter (set' : Finset ℕ) :
    exact (sum_filter_add_sum_filter_not set' _ _).symm
    done
 
-lemma odd_sum {n : ℕ} (X : Finset ℕ) (h': Even (card X))(h: ∀ x ∈ X, Odd x)
-  : Even (∑ k in X, k) := by
-  unfold Even at h'
-  rcases h' with ⟨d, hd⟩
-  induction' d with k hk
-  . norm_num at hd
-    aesop_subst hd
-    simp_all only [card_empty]
-  . sorry
-  done
+def even_sum_finset (X: Finset ℕ) : Prop :=
+  (∀ x ∈ X, Even x) → Even (∑ k in X, k)
 
-lemma filter_odd_sum (set' : Finset ℕ) (h: ¬Odd (card (filter Odd set'))):
- Even (∑ k in (set'.filter Odd), k) := by
-  rw [even_iff_not_odd.symm] at h
-  let odd_set := filter Odd set'
-  have h' : ∀ x ∈ odd_set, Odd x := by
-    intros x hx
-    simp at hx
-    obtain ⟨_,h2⟩ := hx
-    rw [odd_iff_not_even]
-    exact h2
-  apply (odd_sum odd_set h h')
-  exact n
+def odd_sum_finset (X: Finset ℕ): Prop :=
+  (Even $ card X) ∧ (∀ x ∈ X, Odd x) → Even (∑ k in X, k)
 
-#check even_add
-
-example (x y : Bool) : x → y ↔ ¬ x ∨ y := by
-  exact?
-  done
-
-def even_sum_finset (X: Finset ℕ) : Prop := (∀ x ∈ X, Even x) → Even (∑ k in X, k)
-
-lemma even_sum : ∀ (X : Finset ℕ), even_sum_finset X := by
-  intro X
+lemma even_sum (X : Finset ℕ) :even_sum_finset X := by
   have empty : even_sum_finset ∅ := by
     simp only [even_sum_finset]
     done
@@ -173,6 +146,40 @@ lemma even_sum : ∀ (X : Finset ℕ), even_sum_finset X := by
   . rw [imp_iff_not_or]
     simp [even_a]
   done
+
+lemma odd_sum (X : Finset ℕ) : odd_sum_finset X := by
+  have empty : odd_sum_finset ∅ := by
+    simp only [odd_sum_finset]
+    done
+  refine @Finset.induction ℕ odd_sum_finset _ empty ?_ X
+  intro a X' h g
+  unfold odd_sum_finset at *
+  intro h'
+  rw [sum_insert h, even_add]
+
+  constructor
+  . intro _
+    apply g
+    intro x hₓ
+    apply h'
+    simp [mem_insert, hₓ]
+  . rw [imp_iff_not_or]
+    simp [even_a]
+  done
+
+
+lemma filter_odd_sum (set' : Finset ℕ) (h: ¬Odd (card (filter Odd set'))):
+ Even (∑ k in (set'.filter Odd), k) := by
+  rw [even_iff_not_odd.symm] at h
+  let odd_set := filter Odd set'
+  have h' : ∀ x ∈ odd_set, Odd x := by
+    intros x hx
+    simp at hx
+    obtain ⟨_,h2⟩ := hx
+    rw [odd_iff_not_even]
+    exact h2
+  apply (odd_sum odd_set h h')
+  exact n
 
 lemma filter_even_sum (set' : Finset ℕ):
   Even (∑ k in filter (¬ Odd ·) set', k) := by
