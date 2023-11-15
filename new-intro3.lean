@@ -147,6 +147,24 @@ lemma even_sum (X : Finset ℕ) :even_sum_finset X := by
     simp [even_a]
   done
 
+#check Finset.card_insert_of_not_mem
+
+universe u_2
+
+#check Odd.add_odd
+
+theorem odd_add_one {α : Type u_2} [Semiring α] {m : α} (h: Odd m)
+  : Even (m + 1) := Odd.add_odd h odd_one
+
+theorem odd_iff_even_add_one {m : ℕ}
+  : Odd m ↔ Even (m + 1) := by
+    constructor
+    . exact odd_add_one
+    . contrapose
+      rw [← even_iff_not_odd, ← odd_iff_not_even]
+      exact Even.add_one
+    done
+
 lemma odd_sum (X : Finset ℕ) : odd_sum_finset X := by
   have empty : odd_sum_finset ∅ := by
     simp only [odd_sum_finset]
@@ -154,17 +172,35 @@ lemma odd_sum (X : Finset ℕ) : odd_sum_finset X := by
   refine @Finset.induction ℕ odd_sum_finset _ empty ?_ X
   intro a X' h g
   unfold odd_sum_finset at *
-  intro h'
-  rw [sum_insert h, even_add]
+  by_contra h'
+  push_neg at h'
+  have odd_card_X' : Odd (card X') := by
+    have ⟨hₗ, _⟩ := h'.1
+    rw [card_insert_of_not_mem h] at hₗ
 
-  constructor
-  . intro _
-    apply g
-    intro x hₓ
-    apply h'
-    simp [mem_insert, hₓ]
-  . rw [imp_iff_not_or]
-    simp [even_a]
+    done
+
+  by_cases h': Even (card X')
+  . rw [Finset.card_insert_of_not_mem h, imp_iff_not_or, not_and_or]
+    left; left
+    simp only [even_iff_not_odd, not_not, Even.add_one h']
+  . rw [sum_insert h, even_add]
+    intro h''
+    by_contra
+    have odd_card_X' : Odd (card X') := by
+      rw [odd_iff_not_even]
+      exact h'
+      done
+    -- constructor
+    -- . rw [imp_iff_not_or]
+    --   left
+    --   rw [even_iff_not_odd, not_not]
+    --   apply h''.2
+    --   simp_rw [mem_insert]
+    --   left
+    --   trivial
+    -- . contradiction
+
   done
 
 
