@@ -143,23 +143,35 @@ lemma filter_odd_sum (set' : Finset ℕ) (h: ¬Odd (card (filter Odd set'))):
   apply (odd_sum odd_set h h')
   exact n
 
-lemma even_sum {n : ℕ} (X : Finset ℕ) (h': card X = n) (h: ∀ x ∈ X, Even x)
-  : Even (∑ k in X, k) := by
-  unfold Even
-  induction' n with d hd
-  . simp only [card_eq_zero.mp h']
-    use 0
-    rfl
-  . obtain ⟨x, hx⟩ : ∃ x, x ∈ X := card_pos.mp (h'.symm ▸ succ_pos d)
-    let X' := erase X x
-    have hX' : card X' = d := (card_erase_of_mem hx).trans (congrArg pred h')
-    have h'' : Even (∑ k in X', k) := sorry
-    obtain ⟨k, hk⟩ := h x hx
-    have h''' : Even (k + ∑ k in X', k) := by
-      have he: Even k := by sorry
-      apply Even.add he h''
-    sorry
+#check even_add
+
+example (x y : Bool) : x → y ↔ ¬ x ∨ y := by
+  exact?
+  done
+
+def even_sum_finset (X: Finset ℕ) : Prop := (∀ x ∈ X, Even x) → Even (∑ k in X, k)
+
+lemma even_sum : ∀ (X : Finset ℕ), even_sum_finset X := by
+  intro X
+  have empty : even_sum_finset ∅ := by
+    simp only [even_sum_finset]
     done
+  refine @Finset.induction ℕ even_sum_finset _ empty ?_ X
+  intro a X' h g
+  unfold even_sum_finset at *
+  intro h'
+  rw [sum_insert h, even_add]
+  have even_a : Even a := by
+    simp only [h', mem_insert, true_or]
+    done
+  constructor
+  . intro _
+    apply g
+    intro x hₓ
+    apply h'
+    simp [mem_insert, hₓ]
+  . rw [imp_iff_not_or]
+    simp [even_a]
   done
 
 lemma filter_even_sum (set' : Finset ℕ):
