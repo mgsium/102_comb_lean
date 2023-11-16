@@ -12,18 +12,11 @@ open Nat
 open BigOperators
 open Finset
 
---extras
-
--- theorem odd_n_plus_one_div_two (n : ℚ) (h : Odd n) : ∃ m : ℕ, (n + 1) / 2 = m := by
---   unfold Odd at h
---   rcases h with ⟨d, hd⟩
-
---   done
-
 variable (n : ℕ)
 -- we first show that the sum of the given sequence is 2^(n-1)-1
 
-lemma split_sum (h: 1 < n): ∑ k in Ico 0 (n+1), choose n k = choose n 0  + ∑ k in Ico 1 n, choose n k + choose n n := by
+lemma split_sum (h: 1 < n): ∑ k in Ico 0 (n+1), choose n k
+  = choose n 0 + ∑ k in Ico 1 n, choose n k + choose n n := by
   rw [sum_eq_sum_Ico_succ_bot, sum_Ico_succ_top]
   norm_num
   rfl
@@ -37,13 +30,27 @@ lemma aux1 (h: 1 < n): ∑ k in Ico 1 n, choose n k + 2 = 2^n  := by
   exact add_comm _ _
   done
 
+lemma sub_right (n m : ℕ) (h: n + 2 = m): m - 2 = n := by
+  rw [Nat.sub_eq_of_eq_add]
+  rw [h]
+  done
+
+lemma aux1' (h: 1 < n): ∑ k in Ico 1 n, choose n k = 2^n - 2  := by
+  have h₁ : 2^n = ∑ k in Ico 1 n, choose n k + 2 := by sorry
+  sorry
+   -- exact sub_eq_of_eq_add h₁
+  done
+
+lemma aux1'_2 (h: 1 < n): (∑ k in Ico 1 n, choose n k)/2 = (2^n-2)/2 := by
+  rw [aux1' n h]
+  done
+
 #check choose_symm
-
-
 
 def my_set : Finset ℕ := Ico 1 (Nat.div (n+1) 2)
 
-lemma binom_symm (h: 1 < n): ∑ k in Ico 1 n, choose n k = (2:ℚ) * ∑ k in my_set n, choose n k  := by
+lemma binom_symm (h: 1 < n): ∑ k in Ico 1 n, choose n k
+  = 2 * ∑ k in my_set n, choose n k  := by
   unfold my_set
   have g : Nat.div (n+1) 2 ≤ n := by
     sorry
@@ -59,52 +66,73 @@ lemma binom_symm_2 (h: 1 < n): ∑ k in my_set n, choose n k
   =  (∑ k in Ico 1 n, choose n k)/2 := by
   have h₁ : 0 < 2 := by norm_num
   have h₂ : ∑ k in Ico 1 n, choose n k = 2 * ∑ k in my_set n, choose n k
-    := by sorry -- exact binom_symm
+    := by exact binom_symm _ h
   rw [Nat.div_eq_of_eq_mul_right h₁ h₂]
   done
 
-lemma aux3 (h: 1 < n): (∑ k in Ico 1 n, choose n k)/2
-  =  (2^n-2)/2 := by
-  sorry
+
+
+#check Nat.pow_succ
+
+lemma aux4: 2^n-2 = 2*(2^(n-1)-1) := by
+  cases' n with d
+  · simp
+  · simp
+    rw [Nat.pow_succ', Nat.mul_sub_left_distrib]
   done
 
-lemma aux4 (h: 1 < n): (2^n-2)/2 = 2^(n-1)-1 := by
-  induction' n with d hd
-  . norm_num
-  . sorry
+lemma aux4': (2^n-2)/2 = 2^(n-1)-1 := by
+  have h₁ : 0 < 2 := by norm_num
+  have h₂: 2^n-2 = 2*(2^(n-1)-1)
+    := by exact aux4 n
+  rw [Nat.div_eq_of_eq_mul_right h₁ h₂]
   done
 
-lemma aux5 (h: 1 < n): ∑ k in my_set n, choose n k = 2^(n-1)-(1:ℚ) := by
-  sorry
+lemma aux5 (h: 1 < n): ∑ k in my_set n, choose n k = 2^(n-1)-1 := by
+  rw [binom_symm_2 n h, aux1'_2 n h, aux4' n]
   done
 
 -- we prove that 2^(n-1)-1 is always odd for n > 1.
 
-theorem Nat.pow_sucq' {m: ℚ}{n : ℕ} : m ^ succ n = m * m ^ n := by
-    rfl
-    done
-
-lemma pow_prop (m: ℕ)(h: m > 1) : (2:ℚ)^(m-1) = 2^(m-2) * 2 := by
+lemma pow_prop1 (m: ℕ)(h: 0 < m) : 2^m = 2^(m-1) * 2 := by
   cases' m with d
   · contradiction
   · simp
-    sorry
-    --rw [Nat.pow_sucq', mul_comm]
+    rw [Nat.pow_succ', mul_comm]
     done
   done
 
-#check Nat.div
-
-lemma power_odd (h: 1 < n): Odd (2^(n-1) - (1:ℚ)) := by
-  use 2^(n-2)-1
-  ring_nf
-  norm_num
-  exact pow_prop n h
+lemma pow_prop2 (m: ℕ)(h: 1 < m) : 2^(m-1) = 2^(m-2) * 2 := by
+  cases' m with d
+  · contradiction
+  · simp
+    exact pow_prop1 d (by linarith)
+    done
   done
 
-lemma sum_odd (h: 1 < n): Odd (∑ k in my_set n, choose n k + (0:ℚ)) := by
-  rw [aux5 n h]
+lemma nat_sub (k : ℕ)(h₁ : k > 1) :
+  k - 1 = k - 2 + 1 := by
+  cases' k with d
+  · contradiction
+  · simp
+    have h₂ : 0 < d := by linarith
+    exact Nat.eq_add_of_sub_eq h₂ rfl
+    done
+
+lemma power_odd (h: 1 < n): Odd (2^(n-1) - 1) := by
+  use 2^(n-2)-1
+  have h₁ : 1 < 2 * 2 ^ (n - 2) := by
+    have h₂ : 1 ≤ 2^(n-2) := by exact one_le_two_pow (n - 2)
+    linarith
+    done
+  rw [pow_prop2 n h]
+  rw [Nat.mul_sub_left_distrib, mul_comm]
   norm_num
+  rw [nat_sub _ h₁]
+  done
+
+lemma sum_odd (h: 1 < n): Odd (∑ k in my_set n, choose n k) := by
+  rw [aux5 n h]
   exact power_odd n h
   done
 
@@ -246,10 +274,13 @@ def binomial_set (n : ℕ) : Finset ℕ :=
 
 #eval binomial_set 7
 
-theorem intro3 {n : ℕ} (h : Odd n) :
+theorem intro3 {n : ℕ} (h : Odd n) (h': 1 < n) :
   Odd (card ((binomial_set n).filter Odd)) := by
-  have h1 : Odd (∑ k in binomial_set n, k) := by
+  have h1 : Odd (∑ k in my_set n, Nat.choose n k) := by
+    exact sum_odd n h'
+  have h2 : Odd (∑ k in image (fun x ↦ Nat.choose n x) (my_set n), k) := by
+    unfold my_set at *
     sorry
   unfold binomial_set
-  apply odd_number_of_odd_numbers (binomial_set n) h1
+  apply odd_number_of_odd_numbers (binomial_set n) h2
   done
