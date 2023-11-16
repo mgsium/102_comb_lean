@@ -13,15 +13,14 @@ open BigOperators
 open Finset
 
 variable (n : ℕ)
-
 -- we first show that the sum of the given sequence is 2^(n-1)-1
 
-lemma split_sum (h: 1 < n): ∑ k in Ico 0 (n+1), choose n k = choose n 0  + ∑ k in Ico 1 n, choose n k + choose n n := by
-  rw [sum_eq_sum_Ico_succ_bot]
-  rw [sum_Ico_succ_top (by linarith)]
+lemma split_sum (h: 1 < n): ∑ k in Ico 0 (n+1), choose n k
+  = choose n 0 + ∑ k in Ico 1 n, choose n k + choose n n := by
+  rw [sum_eq_sum_Ico_succ_bot, sum_Ico_succ_top]
   norm_num
-  exact rfl
-  linarith
+  rfl
+  all_goals linarith
   done
 
 lemma aux1 (h: 1 < n): ∑ k in Ico 1 n, choose n k + 2 = 2^n  := by
@@ -31,13 +30,28 @@ lemma aux1 (h: 1 < n): ∑ k in Ico 1 n, choose n k + 2 = 2^n  := by
   exact add_comm _ _
   done
 
+lemma sub_right (n m : ℕ) (h: n + 2 = m): m - 2 = n := by
+  rw [Nat.sub_eq_of_eq_add]
+  rw [h]
+  done
+
+lemma aux1' (h: 1 < n): ∑ k in Ico 1 n, choose n k = 2^n - 2  := by
+  have h₁ : 2^n = ∑ k in Ico 1 n, choose n k + 2 := by sorry
+  sorry
+   -- exact sub_eq_of_eq_add h₁
+  done
+
+lemma aux1'_2 (h: 1 < n): (∑ k in Ico 1 n, choose n k)/2 = (2^n-2)/2 := by
+  rw [aux1' n h]
+  done
+
 #check choose_symm
+
 def my_set : Finset ℕ := Ico 1 (Nat.div (n+1) 2)
 
-lemma binom_symm (h: 1 < n): 2 * ∑ k in my_set n, choose n k
-  = ∑ k in Ico 1 n, choose n k := by
+lemma binom_symm (h: 1 < n): ∑ k in Ico 1 n, choose n k
+  = 2 * ∑ k in my_set n, choose n k  := by
   unfold my_set
-  symm
   have g : Nat.div (n+1) 2 ≤ n := by
     sorry
     done
@@ -46,102 +60,227 @@ lemma binom_symm (h: 1 < n): 2 * ∑ k in my_set n, choose n k
   · sorry
   done
 
+#check Nat.div_eq_of_eq_mul_right
+
+lemma binom_symm_2 (h: 1 < n): ∑ k in my_set n, choose n k
+  =  (∑ k in Ico 1 n, choose n k)/2 := by
+  have h₁ : 0 < 2 := by norm_num
+  have h₂ : ∑ k in Ico 1 n, choose n k = 2 * ∑ k in my_set n, choose n k
+    := by exact binom_symm _ h
+  rw [Nat.div_eq_of_eq_mul_right h₁ h₂]
+  done
+
+
+
+#check Nat.pow_succ
+
+lemma aux4: 2^n-2 = 2*(2^(n-1)-1) := by
+  cases' n with d
+  · simp
+  · simp
+    rw [Nat.pow_succ', Nat.mul_sub_left_distrib]
+  done
+
+lemma aux4': (2^n-2)/2 = 2^(n-1)-1 := by
+  have h₁ : 0 < 2 := by norm_num
+  have h₂: 2^n-2 = 2*(2^(n-1)-1)
+    := by exact aux4 n
+  rw [Nat.div_eq_of_eq_mul_right h₁ h₂]
+  done
+
+lemma aux5 (h: 1 < n): ∑ k in my_set n, choose n k = 2^(n-1)-1 := by
+  rw [binom_symm_2 n h, aux1'_2 n h, aux4' n]
+  done
+
 -- we prove that 2^(n-1)-1 is always odd for n > 1.
 
-theorem Nat.pow_sucq' {m: ℚ}{n : ℕ} : m ^ succ n = m * m ^ n := by
-    exact rfl
-    done
-
-lemma pow_prop (m: ℕ)(h: m > 1) : (2:ℚ)^m = 2^(m-1) * 2 := by
+lemma pow_prop1 (m: ℕ)(h: 0 < m) : 2^m = 2^(m-1) * 2 := by
   cases' m with d
   · contradiction
   · simp
-    rw [Nat.pow_sucq', mul_comm]
+    rw [Nat.pow_succ', mul_comm]
     done
   done
 
-lemma power_odd (h: n > 1): Odd (2^n - (1:ℚ)) := by
-  use 2^(n-1) - 1
-  ring_nf
-  norm_num
-  exact pow_prop n h
+lemma pow_prop2 (m: ℕ)(h: 1 < m) : 2^(m-1) = 2^(m-2) * 2 := by
+  cases' m with d
+  · contradiction
+  · simp
+    exact pow_prop1 d (by linarith)
+    done
   done
 
--- if the sum of the elements of a set is odd, then the set contains an odd number of odd numbers.
+lemma nat_sub (k : ℕ)(h₁ : k > 1) :
+  k - 1 = k - 2 + 1 := by
+  cases' k with d
+  · contradiction
+  · simp
+    have h₂ : 0 < d := by linarith
+    exact Nat.eq_add_of_sub_eq h₂ rfl
+    done
+
+lemma power_odd (h: 1 < n): Odd (2^(n-1) - 1) := by
+  use 2^(n-2)-1
+  have h₁ : 1 < 2 * 2 ^ (n - 2) := by
+    have h₂ : 1 ≤ 2^(n-2) := by exact one_le_two_pow (n - 2)
+    linarith
+    done
+  rw [pow_prop2 n h]
+  rw [Nat.mul_sub_left_distrib, mul_comm]
+  norm_num
+  rw [nat_sub _ h₁]
+  done
+
+lemma sum_odd (h: 1 < n): Odd (∑ k in my_set n, choose n k) := by
+  rw [aux5 n h]
+  exact power_odd n h
+  done
+
+-- if the sum of the elements of a finset is odd, then the finset contains an odd number of odd numbers.
+
+#check Finset.card_insert_of_not_mem
+
+universe u_2
+
+#check Odd.add_odd
+
+theorem odd_add_one {α : Type u_2} [Semiring α] {m : α} (h: Odd m)
+  : Even (m + 1) := Odd.add_odd h odd_one
+
+theorem odd_iff_even_add_one {m : ℕ}
+  : Odd m ↔ Even (m + 1) := by
+    constructor
+    . exact odd_add_one
+    . contrapose
+      rw [← even_iff_not_odd, ← odd_iff_not_even]
+      exact Even.add_one
+    done
 
 theorem odd_filter (set' : Finset ℕ) :
    ∑ k in set', k = ∑ k in (set'.filter Odd), k
-   +  ∑ k in (set'.filter (λ x => ¬ Odd x)), k   := by
-   exact (sum_filter_add_sum_filter_not set' (fun x => Odd x) fun x => x).symm
+   +  ∑ k in (set'.filter (¬ Odd ·)), k := by
+   exact (sum_filter_add_sum_filter_not set' _ _).symm
    done
 
-lemma odd_sum {n : ℕ} (X : Finset ℕ) (h': card X = 2*n): Even (∑ k in X, k) := by
-  unfold Even
-  induction' n with d hd
-  .simp [card_eq_zero.mp h']
-   use 0
-   rfl
-  . sorry
+def even_sum_finset (X: Finset ℕ) : Prop :=
+  (∀ x ∈ X, Even x) → Even (∑ k in X, k)
+
+lemma even_sum (X : Finset ℕ) :even_sum_finset X := by
+  have empty : even_sum_finset ∅ := by
+    simp only [even_sum_finset]
+    done
+  refine @Finset.induction ℕ even_sum_finset _ empty ?_ X
+  intro a X' h g
+  unfold even_sum_finset at *
+  rw [sum_insert h, even_add]
+  simp_all only [mem_insert, or_true, implies_true]
   done
+
+def odd_sum_finset (X: Finset ℕ): Prop :=
+  (Even $ card X) ∧ (∀ x ∈ X, Odd x) → Even (∑ k in X, k)
+
+
+
+lemma even_sum_of_odd (X : Finset ℕ) : odd_sum_finset X := by
+  unfold odd_sum_finset Even Odd
+  intro h
+  sorry
+  -- have empty : odd_sum_finset ∅ := by
+  --   simp only [odd_sum_finset]
+  --   done
+
+  -- refine @Finset.induction ℕ odd_sum_finset _ empty ?_ X
+  -- intro a X' h g
+  -- unfold odd_sum_finset at *
+  -- intro h'
+
+  -- by_contra h'
+  -- push_neg at h'
+  -- have odd_card_X' : Odd (card X') := by
+  --   have ⟨hₗ, _⟩ := h'.1
+  --   rw [card_insert_of_not_mem h] at hₗ
+  --   exact odd_iff_even_add_one.mpr hₗ
+  --   done
+
+
+
+  -- by_cases h': Even (card X')
+  -- . rw [Finset.card_insert_of_not_mem h, imp_iff_not_or, not_and_or]
+  --   left; left
+  --   simp only [even_iff_not_odd, not_not, Even.add_one h']
+  -- . rw [sum_insert h, even_add]
+  --   intro h''
+  --   by_contra
+  --   have odd_card_X' : Odd (card X') := by
+  --     rw [odd_iff_not_even]
+  --     exact h'
+  --     done
+
+    -- constructor
+    -- . rw [imp_iff_not_or]
+    --   left
+    --   rw [even_iff_not_odd, not_not]
+    --   apply h''.2
+    --   simp_rw [mem_insert]
+    --   left
+    --   trivial
+    -- . contradiction
+
+  done
+
 
 lemma filter_odd_sum (set' : Finset ℕ) (h: ¬Odd (card (filter Odd set'))):
- Even (∑ k in filter (fun x => Odd x) set', k) := by
+ Even (∑ k in (set'.filter Odd), k) := by
   rw [even_iff_not_odd.symm] at h
-  sorry
-  -- simp at h
-  -- exact h
-  done
-
-lemma even_sum {n : ℕ} (X : Finset ℕ) (h': card X = n)(h: ∀ x ∈ X, Even x):
-  Even (∑ k in X, k) := by
-  unfold Even
-  induction' n with d hd
-  .simp [card_eq_zero.mp h']
-   use 0
-   rfl
-  . obtain ⟨x, hx⟩ : ∃ x, x ∈ X := card_pos.mp (h'.symm ▸ succ_pos d)
-    let X' := erase X x
-    have hX' : card X' = d := (card_erase_of_mem hx).trans (congrArg pred h')
-    have h'' : Even (∑ k in X', k) := sorry
-    obtain ⟨k, hk⟩ := h x hx
-    have h''' : Even (k + ∑ k in X', k) := by
-      have he: Even k := by sorry
-      apply Even.add he h''
-    sorry
-    done
+  let odd_set := filter Odd set'
+  have h' : ∀ x ∈ odd_set, Odd x := by
+    intros x hx
+    simp at hx
+    obtain ⟨_,h2⟩ := hx
+    rw [odd_iff_not_even]
+    exact h2
+  apply (even_sum_of_odd odd_set ⟨h, h'⟩)
   done
 
 lemma filter_even_sum (set' : Finset ℕ):
-  Even (∑ k in filter (fun x => ¬Odd x) set', k) := by
-  let even_set := filter (fun x => ¬Odd x) set'
+  Even (∑ k in filter (¬ Odd ·) set', k) := by
+  let even_set := filter (¬ Odd ·) set'
   have h : ∀ x ∈ even_set, Even x := by
     intros x hx
     simp at hx
     obtain ⟨_,h2⟩ := hx
     exact h2
-  apply (even_sum even_set rfl h)
+  apply (even_sum even_set h)
   done
 
-theorem general_odd (set' : Finset ℕ) (h : Odd (∑ k in set', k)) :
-  Odd (card (set'.filter (λ x => Odd x))) := by
+theorem odd_number_of_odd_numbers (set' : Finset ℕ) (h : Odd (∑ k in set', k)) :
+  Odd (card (set'.filter Odd)) := by
   contrapose h
   simp
   rw [odd_filter]
-  have h1: Even (∑ k in filter (fun x => ¬Odd x) set', k)
+  have h1: Even (∑ k in filter (¬ Odd ·) set', k)
     := by exact filter_even_sum set'
-  have h2: Even (∑ k in filter (fun x => Odd x) set', k)
+  have h2: Even (∑ k in filter (Odd ·) set', k)
     := by exact filter_odd_sum set' h
   apply Even.add h2 h1
   done
 
 -- we finally prove the main result
 
-def odd_binomials_finset (n : ℕ) : Finset ℕ :=
-filter (λ k => Odd (Nat.choose n k)) (my_set n)
+-- def my_set : Finset ℕ := Ico 1 (Nat.div (n+1) 2)
 
-#eval odd_binomials_finset 7
+def binomial_set (n : ℕ) : Finset ℕ :=
+  (my_set n).image (Nat.choose n ·)
 
-theorem intro3 {n : ℕ} (h : Odd n) :
-  Odd (card (odd_binomials_finset n)) := by
-  sorry
+#eval binomial_set 7
+
+theorem intro3 {n : ℕ} (h : Odd n) (h': 1 < n) :
+  Odd (card ((binomial_set n).filter Odd)) := by
+  have h1 : Odd (∑ k in my_set n, Nat.choose n k) := by
+    exact sum_odd n h'
+  have h2 : Odd (∑ k in image (fun x ↦ Nat.choose n x) (my_set n), k) := by
+    unfold my_set at *
+    sorry
+  unfold binomial_set
+  apply odd_number_of_odd_numbers (binomial_set n) h2
   done
