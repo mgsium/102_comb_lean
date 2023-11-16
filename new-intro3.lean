@@ -144,13 +144,14 @@ lemma even_sum (X : Finset ℕ) :even_sum_finset X := by
   refine @Finset.induction ℕ even_sum_finset _ empty ?_ X
   intro a X' h g
   unfold even_sum_finset at *
-  intro h'
   rw [sum_insert h, even_add]
   simp_all only [mem_insert, or_true, implies_true]
   done
 
 def odd_sum_finset (X: Finset ℕ): Prop :=
   (Even $ card X) ∧ (∀ x ∈ X, Odd x) → Even (∑ k in X, k)
+
+
 
 lemma even_sum_of_odd (X : Finset ℕ) : odd_sum_finset X := by
   unfold odd_sum_finset Even Odd
@@ -167,7 +168,6 @@ lemma even_sum_of_odd (X : Finset ℕ) : odd_sum_finset X := by
 
   -- by_contra h'
   -- push_neg at h'
-
   -- have odd_card_X' : Odd (card X') := by
   --   have ⟨hₗ, _⟩ := h'.1
   --   rw [card_insert_of_not_mem h] at hₗ
@@ -235,4 +235,21 @@ theorem odd_number_of_odd_numbers (set' : Finset ℕ) (h : Odd (∑ k in set', k
   have h2: Even (∑ k in filter (Odd ·) set', k)
     := by exact filter_odd_sum set' h
   apply Even.add h2 h1
+  done
+
+-- we finally prove the main result
+
+-- def my_set : Finset ℕ := Ico 1 (Nat.div (n+1) 2)
+
+def binomial_set (n : ℕ) : Finset ℕ :=
+  (my_set n).image (Nat.choose n ·)
+
+#eval binomial_set 7
+
+theorem intro3 {n : ℕ} (h : Odd n) :
+  Odd (card ((binomial_set n).filter Odd)) := by
+  have h1 : Odd (∑ k in binomial_set n, k) := by
+    sorry
+  unfold binomial_set
+  apply odd_number_of_odd_numbers (binomial_set n) h1
   done
