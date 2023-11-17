@@ -47,6 +47,21 @@ lemma V_partition (V : Finset ℕ) (G : SimpleGraph V)
 --noncomputable
 --def A_set {V : Finset ℕ} {G : SimpleGraph V} (p:V) : Finset {x // x ∈ V} := G.neighborFinset p
 
+--lemma odd_sum_odd (n : ℕ)
+
+lemma odd_pred {n : ℕ} (h: 1 ≤ n) (g : Even n) : Odd (n - 1) := by
+  match n with
+  | 0   => contradiction
+  | k+1 =>
+    unfold Even at g
+    cases g with | intro r g =>
+      unfold Odd
+      use r-1
+      rw [g]
+      rw [two_mul]
+
+  done
+
 lemma ne_zero_iff_eq_one_mod_two (n : ℕ): n % 2 ≠ 0 ↔ n % 2 = 1 := by
   simp
 
@@ -62,20 +77,14 @@ lemma neg_two_plus_one (k : ℕ) (h₁ : k > 1) :
     exact Nat.eq_add_of_sub_eq h₂ rfl
     done
 
-lemma reee (a b : Finset ℕ) (h : a ⊂ b) (h₁ : Even $ card a) (h₂ : Odd $ card b)
-  : Odd $ card (b \ a) := by
-    rw [card_sdiff]
-    . unfold Odd Even at *
-      cases h₁ with
-      | intro ra h₁ =>
-      cases h₂ with
-      | intro rb h₂ =>
-      use rb - ra
-      rw [two_mul]
-      repeat rw [← add_assoc]
-      repeat rw [← Nat.sub_assoc]
-    . exact subset_of_ssubset h
-    done
+universe u_1
+
+lemma even_sdiff_even {α : Type u_1} [DecidableEq α] (A B : Finset α) (h : B ⊆ A)
+  (h₁ : Even A.card) (h₂ : Even B.card) : Even (card $ A \ B) := by
+  rw [card_sdiff]
+  . refine Even.tsub h₁ h₂
+  . exact h
+  done
 
 theorem intro38 {V : Finset ℕ} (n : ℕ) (G : SimpleGraph V) [DecidableRel G.Adj] (b : n≥1)
   (h : ∀(v:V), Even (G.degree v) ) (c : V.card = 2*n)
@@ -84,6 +93,11 @@ theorem intro38 {V : Finset ℕ} (n : ℕ) (G : SimpleGraph V) [DecidableRel G.A
   push_neg at g
   simp_rw [ne_zero_iff_eq_one_mod_two] at g
   -- A := N(p)
+  have V_even : Even $ card V := by
+    unfold Even
+    use n
+    rw [← two_mul]
+    exact c
   have h₀ : ∀(p : V), Even (card $ G.neighborFinset p) := h
   have h₁ : ∀(p : V), Odd (card $ V.attach.erase p) := by
     simp only [mem_attach, card_erase_of_mem, card_attach, ge_iff_le, Subtype.forall]
@@ -96,44 +110,23 @@ theorem intro38 {V : Finset ℕ} (n : ℕ) (G : SimpleGraph V) [DecidableRel G.A
     | k+1 => rw [mul_add]; simp
     done
   --B := (V ∖ {p}) ∖ A
-  have h₂ : ∀(p : V), Odd (card $ V.attach.erase p \ G.neighborFinset p) := by
+  have even_lemma : ∀(p : V), Even (card $ V.attach \ G.neighborFinset p) := by
     intro p
-    unfold Odd
     rw [card_sdiff]
-    . simp only [mem_attach, card_erase_of_mem, card_attach,
-      card_neighborFinset_eq_degree]
-      rw [c]
-      have g₂ : Even (degree G p) := h p
-      unfold Even at g₂
-
-      cases g₂ with
-      | intro r k =>
-        use (n - r - 1)
-        rw [k]
-        rw [← two_mul]
-        rw [Nat.sub_right_comm]
-        repeat rw [Nat.mul_sub_left_distrib]
-        refine neg_two_plus_one (2 * n - 2 * r) ?_
-        --rw [← Nat.mul_sub_left_distrib]
-        rw [two_mul r]
-        rw [← k]
-        rw [← c]
-        have g₃ : degree G p < card V := by
-          sorry--exact G.degree_lt_card_verts p
-
-      -- rw [← even_iff] at this
-      -- unfold Even at this
-      -- let r := Classical.choose this
-      -- unfold Odd
-      -- use (n - r - 1)
-
-      -- exact Odd.sub_even g₁ g₂
+    . simp only [card_attach]
+      refine Even.tsub V_even (h p)
     . intro x
-      simp only [mem_neighborFinset, mem_attach, mem_erase, and_true]
-      exact Adj.ne'
+      simp only [mem_neighborFinset, mem_attach, implies_true]
+  have h₂ : ∀(p : V), Odd (card $ (V.attach \ G.neighborFinset p).erase p) := by
+    intro p
+    simp only [mem_sdiff, mem_attach, mem_neighborFinset, SimpleGraph.irrefl, card_erase_of_mem]
+
+
+    done
   have h₃ : ∀(p q : V), q ∈ (V.attach.erase p \ G.neighborFinset p)
-    → ¬G.Adj p q := by simp only [mem_sdiff, mem_neighborFinset, and_imp,
-    imp_self, implies_true]
+    → ¬G.Adj p q := by
+    simp only [mem_sdiff, mem_neighborFinset, and_imp, imp_self, implies_true]
+    done
   have h₄ : ∀(p q : V), q ∈ (V.attach.erase p \ G.neighborFinset p)
     → card (G.neighborFinset q ∩ G.neighborFinset p) % 2 = 1 := by
     exact fun p q _ ↦ g q p
@@ -153,7 +146,7 @@ theorem intro38 {V : Finset ℕ} (n : ℕ) (G : SimpleGraph V) [DecidableRel G.A
     rw [not_and_or]
     push_neg
     simp_rw [ne_one_iff_eq_zero_mod_two]
-    sorry
+
     done
 
   have h₆ : ∀(p : V), ∑ q in (V.attach.erase p \ G.neighborFinset p),
