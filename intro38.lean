@@ -47,26 +47,37 @@ lemma V_partition (V : Finset ℕ) (G : SimpleGraph V)
 --noncomputable
 --def A_set {V : Finset ℕ} {G : SimpleGraph V} (p:V) : Finset {x // x ∈ V} := G.neighborFinset p
 
-lemma simp_mod_two (n : ℕ): n % 2 ≠ 0 ↔ n % 2 = 1 := by
+lemma ne_zero_iff_eq_one_mod_two (n : ℕ): n % 2 ≠ 0 ↔ n % 2 = 1 := by
   simp
 
 lemma ne_one_iff_eq_zero_mod_two (n : ℕ): n % 2 ≠ 1 ↔ n % 2 = 0 := by
   simp
 
-lemma odd_pred { n : ℕ } (h : 1 ≤ n) : Odd (2 * n - 1) := by
-  match n with
-  | 0 => contradiction
-  | k + 1 => rw [two_mul]; norm_num
-  done
+lemma neg_two_plus_one (k : ℕ) (h₁ : k > 1) :
+  k - 1 = k - 2 + 1 := by
+  cases' k with d
+  · contradiction
+  · simp
+    have h₂ : 0 < d := by linarith
+    exact Nat.eq_add_of_sub_eq h₂ rfl
+    done
 
-lemma sub_even { a b : ℕ } (ha : Odd a) (hb : Even b)
-  : Odd (a - b) := by
-  match a with
-  | 0 => contradiction
-  | k + 1 =>
-  done
+lemma reee (a b : Finset ℕ) (h : a ⊂ b) (h₁ : Even $ card a) (h₂ : Odd $ card b)
+  : Odd $ card (b \ a) := by
+    rw [card_sdiff]
+    . unfold Odd Even at *
+      cases h₁ with
+      | intro ra h₁ =>
+      cases h₂ with
+      | intro rb h₂ =>
+      use rb - ra
+      rw [two_mul]
+      repeat rw [← add_assoc]
+      repeat rw [← Nat.sub_assoc]
+    . exact subset_of_ssubset h
+    done
 
-theorem intro38 {V : Finset ℕ} (n : ℕ) (G : SimpleGraph V) (b : n≥1)
+theorem intro38 {V : Finset ℕ} (n : ℕ) (G : SimpleGraph V) [DecidableRel G.Adj] (b : n≥1)
   (h : ∀(v:V), Even (G.degree v) ) (c : V.card = 2*n)
   : ∃(a b : V), (card (G.neighborFinset a ∩ G.neighborFinset b) % 2 = 0) := by
   by_contra g
@@ -75,15 +86,14 @@ theorem intro38 {V : Finset ℕ} (n : ℕ) (G : SimpleGraph V) (b : n≥1)
   -- A := N(p)
   have h₀ : ∀(p : V), Even (card $ G.neighborFinset p) := h
   have h₁ : ∀(p : V), Odd (card $ V.attach.erase p) := by
-    sorry
-    -- simp
-    -- intro a _
-    -- rw [c, ← odd_iff]
-    -- unfold Odd
-    -- use n-1
-    -- match n with
-    -- | 0   => contradiction
-    -- | k+1 => rw [mul_add]; simp
+    simp only [mem_attach, card_erase_of_mem, card_attach, ge_iff_le, Subtype.forall]
+    intro a _
+    rw [c]
+    unfold Odd
+    use n-1
+    match n with
+    | 0   => contradiction
+    | k+1 => rw [mul_add]; simp
     done
   --B := (V ∖ {p}) ∖ A
   have h₂ : ∀(p : V), Odd (card $ V.attach.erase p \ G.neighborFinset p) := by
@@ -100,14 +110,24 @@ theorem intro38 {V : Finset ℕ} (n : ℕ) (G : SimpleGraph V) (b : n≥1)
       | intro r k =>
         use (n - r - 1)
         rw [k]
+        rw [← two_mul]
+        rw [Nat.sub_right_comm]
+        repeat rw [Nat.mul_sub_left_distrib]
+        refine neg_two_plus_one (2 * n - 2 * r) ?_
+        --rw [← Nat.mul_sub_left_distrib]
+        rw [two_mul r]
+        rw [← k]
+        rw [← c]
+        have g₃ : degree G p < card V := by
+          sorry--exact G.degree_lt_card_verts p
 
-      rw [← even_iff] at this
-      unfold Even at this
-      let r := Classical.choose this
-      unfold Odd
-      use (n - r - 1)
+      -- rw [← even_iff] at this
+      -- unfold Even at this
+      -- let r := Classical.choose this
+      -- unfold Odd
+      -- use (n - r - 1)
 
-      exact @Odd.sub_even (odd_pred b) g₂
+      -- exact Odd.sub_even g₁ g₂
     . intro x
       simp only [mem_neighborFinset, mem_attach, mem_erase, and_true]
       exact Adj.ne'
