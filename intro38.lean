@@ -49,17 +49,27 @@ lemma V_partition (V : Finset ℕ) (G : SimpleGraph V)
 
 --lemma odd_sum_odd (n : ℕ)
 
+
+
 lemma odd_pred {n : ℕ} (h: 1 ≤ n) (g : Even n) : Odd (n - 1) := by
   match n with
   | 0   => contradiction
   | k+1 =>
     unfold Even at g
     cases g with | intro r g =>
-      unfold Odd
-      use r-1
-      rw [g]
-      rw [two_mul]
-
+      rw [add_tsub_cancel_right, odd_iff_not_even]
+      by_contra h'
+      have : Even (k+1) := by
+        unfold Even
+        use r
+        done
+      have : ¬Even (k+1) := by
+        rw [← odd_iff_not_even]
+        apply Even.add_odd
+        . exact h'
+        . trivial
+        done
+      contradiction
   done
 
 lemma ne_zero_iff_eq_one_mod_two (n : ℕ): n % 2 ≠ 0 ↔ n % 2 = 1 := by
@@ -76,6 +86,16 @@ lemma neg_two_plus_one (k : ℕ) (h₁ : k > 1) :
     have h₂ : 0 < d := by linarith
     exact Nat.eq_add_of_sub_eq h₂ rfl
     done
+
+example (A B C : Finset ℕ) (ha : B ⊆ A) (hc : C ⊆ A) : Disjoint (A∩B) (A∩C) ↔ Disjoint B C := by
+  constructor
+  . intro h
+    rw [disjoint_iff_inter_eq_empty] at *
+
+  . sorry
+  done
+
+
 
 universe u_1
 
@@ -117,33 +137,58 @@ theorem intro38 {V : Finset ℕ} (n : ℕ) (G : SimpleGraph V) [DecidableRel G.A
       refine Even.tsub V_even (h p)
     . intro x
       simp only [mem_neighborFinset, mem_attach, implies_true]
+  -- cardinality of B is odd
   have h₂ : ∀(p : V), Odd (card $ (V.attach \ G.neighborFinset p).erase p) := by
     intro p
     simp only [mem_sdiff, mem_attach, mem_neighborFinset, SimpleGraph.irrefl, card_erase_of_mem]
-
-
+    refine odd_pred ?_ (even_lemma p)
+    by_contra k
+    simp only [not_le, lt_one_iff, card_eq_zero, sdiff_eq_empty_iff_subset] at k
+    rw [Finset.subset_iff] at k
+    have k₂: p ∈ attach V ∧ p ∉ neighborFinset G p := by
+      constructor
+      . simp only [mem_attach]
+      . simp only [mem_neighborFinset, SimpleGraph.irrefl, not_false_eq_true]
+      done
+    simp_rw [imp_iff_not_or] at k
+    have k₃: ¬p ∈ attach V ∨ ¬¬p ∈ neighborFinset G p := by
+      simp only [not_not]
+      exact @k p
+      done
+    rw [← not_and_or] at k₃
+    contradiction
     done
-  have h₃ : ∀(p q : V), q ∈ (V.attach.erase p \ G.neighborFinset p)
+  -- vertices in B are not adjacent to p
+  have h₃ : ∀(p q : V), q ∈ (V.attach\ G.neighborFinset p).erase p
     → ¬G.Adj p q := by
-    simp only [mem_sdiff, mem_neighborFinset, and_imp, imp_self, implies_true]
+    simp only [mem_sdiff, mem_attach, mem_neighborFinset, SimpleGraph.irrefl, not_false_eq_true,
+      and_self, not_true, mem_erase, ne_eq, true_and, and_imp, imp_self, implies_true,
+      Subtype.forall, forall_const]
     done
-  have h₄ : ∀(p q : V), q ∈ (V.attach.erase p \ G.neighborFinset p)
+  -- degree of q in A is odd
+  have h₄ : ∀(p q : V), q ∈ (V.attach \ G.neighborFinset p).erase p
     → card (G.neighborFinset q ∩ G.neighborFinset p) % 2 = 1 := by
     exact fun p q _ ↦ g q p
     -- exact fun p q a ↦ (fun n ↦ (ne_zero_iff_eq_one_mod_two n).mp) (card (neighborFinset G q ∩ neighborFinset G p)) (g q p)
     done
-  have h₅ : ∀(p q : V), q ∈ (V.attach.erase p \ G.neighborFinset p)
-    → card (G.neighborFinset q ∩ (V.attach.erase p \ G.neighborFinset p)) % 2 = 1
-    := by
+  have disjoint_lemma : ∀(p q : V), Disjoint
+    (G.neighborFinset q ∩ G.neighborFinset p)
+    (G.neighborFinset q ∩ (V.attach \ G.neighborFinset p).erase p) := by
+
+    done
+  -- degree of q in B is odd
+  have h₅ : ∀(p q : V), q ∈ (V.attach \ G.neighborFinset p).erase p
+    → card (G.neighborFinset q ∩ (V.attach \ G.neighborFinset p).erase p)
+    % 2 = 1 := by
     intro p q
-    simp only [mem_attach, mem_sdiff, mem_erase, and_true, mem_neighborFinset]
+    simp only [mem_sdiff, mem_attach, mem_neighborFinset, SimpleGraph.irrefl, not_false_eq_true,
+      and_self, not_true, mem_erase, ne_eq, true_and, and_imp]
 
 
 
 
 
     contrapose
-    rw [not_and_or]
     push_neg
     simp_rw [ne_one_iff_eq_zero_mod_two]
 
