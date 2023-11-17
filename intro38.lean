@@ -46,9 +46,11 @@ lemma V_partition (V : Finset ℕ) (G : SimpleGraph V)
 
 --def A_set {V : Finset ℕ} {G : SimpleGraph V} (p:V) : Finset {x // x ∈ V} := G.neighborFinset p
 
-lemma ree (n : ℕ): n % 2 ≠ 0 ↔ n % 2 = 1 := by
+lemma ne_zero_iff_eq_one_mod_two (n : ℕ): n % 2 ≠ 0 ↔ n % 2 = 1 := by
   simp
 
+lemma ne_one_iff_eq_zero_mod_two (n : ℕ): n % 2 ≠ 1 ↔ n % 2 = 0 := by
+  simp
 
 
 theorem intro38 {V : Finset ℕ} (n : ℕ) (G : SimpleGraph V) (b : n≥1)
@@ -56,6 +58,7 @@ theorem intro38 {V : Finset ℕ} (n : ℕ) (G : SimpleGraph V) (b : n≥1)
   : ∃(a b : V), (card (G.neighborFinset a ∩ G.neighborFinset b) % 2 = 0) := by
   by_contra g
   push_neg at g
+  simp_rw [ne_zero_iff_eq_one_mod_two] at g
   -- A := N(p)
   have h₀ : ∀(p : V), (card $ G.neighborFinset p) % 2 = 0 := h
   have h₁ : ∀(p : V), (card $ V.attach.erase p) % 2 = 1 := by
@@ -74,31 +77,51 @@ theorem intro38 {V : Finset ℕ} (n : ℕ) (G : SimpleGraph V) (b : n≥1)
     rw [card_sdiff]
     . simp
       rw [c, ← odd_iff]
-      unfold Odd
-      use (degree G p)-1
-      match n with
-      | 0   => contradiction
-      | k+1 => sorry
+      have g₁ : Odd (2 * n - 1) := by
+        match n with
+        | 0   => contradiction
+        | k+1 => rw [two_mul]; norm_num
+      have g₂ : Even (degree G p) := by
+        rw [even_iff]
+        exact h p
+      sorry
+      -- exact Odd.sub_even g₁ g₂
     . intro x
-      simp
+      simp only [mem_neighborFinset, mem_attach, mem_erase, and_true]
+      -- contrapose
+      -- push_neg
+      -- exact G.loopless p
       exact fun a ↦ Adj.ne (id (adj_symm G a))
   have h₃ : ∀(p q : V), q ∈ (V.attach.erase p \ G.neighborFinset p)
-    → ¬G.Adj p q := by
-    simp
+    → ¬G.Adj p q := by simp only [mem_sdiff, mem_neighborFinset, and_imp,
+    imp_self, implies_true]
   have h₄ : ∀(p q : V), q ∈ (V.attach.erase p \ G.neighborFinset p)
     → card (G.neighborFinset q ∩ G.neighborFinset p) % 2 = 1 := by
-    exact fun p q a ↦ (fun n ↦ (ree n).mp) (card (neighborFinset G q ∩ neighborFinset G p)) (g q p)
+    exact fun p q _ ↦ g q p
+    -- exact fun p q a ↦ (fun n ↦ (ne_zero_iff_eq_one_mod_two n).mp) (card (neighborFinset G q ∩ neighborFinset G p)) (g q p)
     done
   have h₅ : ∀(p q : V), q ∈ (V.attach.erase p \ G.neighborFinset p)
     → card (G.neighborFinset q ∩ (V.attach.erase p \ G.neighborFinset p)) % 2 = 1
     := by
+    intro p q
+    simp only [mem_attach, mem_sdiff, mem_erase, and_true, mem_neighborFinset]
+
+
+
+
+
+    contrapose
+    rw [not_and_or]
+    push_neg
+    simp_rw [ne_one_iff_eq_zero_mod_two]
     sorry
     done
 
   have h₆ : ∀(p : V), ∑ q in (V.attach.erase p \ G.neighborFinset p),
-    card(G.neighborFinset q ∩ (V.attach.erase p \ G.neighborFinset p))
-    = 2 * -- number of edges in subgraph (V.attach.erase p \ G.neighborFinset p)
-    := by
-    sorry
-    done
+    card (G.neighborFinset q ∩ (V.attach.erase p \ G.neighborFinset p))
+    -- = 2 * -- number of edges in subgraph (V.attach.erase p \ G.neighborFinset p)
+    % 2 = 0 := by
+     sorry
+     done
+
   done
