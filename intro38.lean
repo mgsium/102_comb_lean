@@ -53,39 +53,61 @@ lemma simp_mod_two (n : ℕ): n % 2 ≠ 0 ↔ n % 2 = 1 := by
 lemma ne_one_iff_eq_zero_mod_two (n : ℕ): n % 2 ≠ 1 ↔ n % 2 = 0 := by
   simp
 
+lemma odd_pred { n : ℕ } (h : 1 ≤ n) : Odd (2 * n - 1) := by
+  match n with
+  | 0 => contradiction
+  | k + 1 => rw [two_mul]; norm_num
+  done
+
+lemma sub_even { a b : ℕ } (ha : Odd a) (hb : Even b)
+  : Odd (a - b) := by
+  match a with
+  | 0 => contradiction
+  | k + 1 =>
+  done
 
 theorem intro38 {V : Finset ℕ} (n : ℕ) (G : SimpleGraph V) (b : n≥1)
-  (h : ∀(v:V), G.degree v % 2 = 0) (c : V.card = 2*n)
+  (h : ∀(v:V), Even (G.degree v) ) (c : V.card = 2*n)
   : ∃(a b : V), (card (G.neighborFinset a ∩ G.neighborFinset b) % 2 = 0) := by
   by_contra g
   push_neg at g
   simp_rw [ne_zero_iff_eq_one_mod_two] at g
   -- A := N(p)
-  have h₀ : ∀(p : V), (card $ G.neighborFinset p) % 2 = 0 := h
-  have h₁ : ∀(p : V), (card $ V.attach.erase p) % 2 = 1 := by
-    simp
-    intro a _
-    rw [c, ← odd_iff]
-    unfold Odd
-    use n-1
-    match n with
-    | 0   => contradiction
-    | k+1 => rw [mul_add]; simp
+  have h₀ : ∀(p : V), Even (card $ G.neighborFinset p) := h
+  have h₁ : ∀(p : V), Odd (card $ V.attach.erase p) := by
+    sorry
+    -- simp
+    -- intro a _
+    -- rw [c, ← odd_iff]
+    -- unfold Odd
+    -- use n-1
+    -- match n with
+    -- | 0   => contradiction
+    -- | k+1 => rw [mul_add]; simp
     done
   --B := (V ∖ {p}) ∖ A
-  have h₂ : ∀(p : V), (card $ V.attach.erase p \ G.neighborFinset p) % 2 = 1 := by
+  have h₂ : ∀(p : V), Odd (card $ V.attach.erase p \ G.neighborFinset p) := by
     intro p
+    unfold Odd
     rw [card_sdiff]
-    . simp
-      rw [c, ← odd_iff]
-      have g₁ : Odd (2 * n - 1) := by
-        match n with
-        | 0   => contradiction
-        | k+1 => rw [two_mul]; norm_num
-      have g₂ : Even (degree G p) := by
-        rw [even_iff]
-        exact h p
-      exact Odd.sub_even g₁ g₂
+    . simp only [mem_attach, card_erase_of_mem, card_attach,
+      card_neighborFinset_eq_degree]
+      rw [c]
+      have g₂ : Even (degree G p) := h p
+      unfold Even at g₂
+
+      cases g₂ with
+      | intro r k =>
+        use (n - r - 1)
+        rw [k]
+
+      rw [← even_iff] at this
+      unfold Even at this
+      let r := Classical.choose this
+      unfold Odd
+      use (n - r - 1)
+
+      exact @Odd.sub_even (odd_pred b) g₂
     . intro x
       simp only [mem_neighborFinset, mem_attach, mem_erase, and_true]
       exact Adj.ne'
