@@ -30,15 +30,15 @@ lemma aux1 (h: 1 < n): ∑ k in Ico 1 n, choose n k + 2 = 2^n  := by
   exact add_comm _ _
   done
 
-lemma sub_right (n m : ℕ) (h: n + 2 = m): m - 2 = n := by
+lemma sub_right (k m : ℕ) (h: k + 2 = m): m - 2 = k := by
   rw [Nat.sub_eq_of_eq_add]
   rw [h]
   done
 
-lemma aux1' (h: 1 < n): ∑ k in Ico 1 n, choose n k = 2^n - 2  := by
-  have h₁ : 2^n = ∑ k in Ico 1 n, choose n k + 2 := by sorry
-  sorry
-   -- exact sub_eq_of_eq_add h₁
+lemma aux1' (h: 1 < n): 2^n - 2 = ∑ k in Ico 1 n, choose n k := by
+  have h₁ :  ∑ k in Ico 1 n, choose n k + 2 = 2^n := by
+    exact aux1 n h
+  exact sub_right (∑ k in Ico 1 n, choose n k) (2^n) h₁
   done
 
 lemma aux1'_2 (h: 1 < n): (∑ k in Ico 1 n, choose n k)/2 = (2^n-2)/2 := by
@@ -69,10 +69,6 @@ lemma binom_symm_2 (h: 1 < n): ∑ k in my_set n, choose n k
     := by exact binom_symm _ h
   rw [Nat.div_eq_of_eq_mul_right h₁ h₂]
   done
-
-
-
-#check Nat.pow_succ
 
 lemma aux4: 2^n-2 = 2*(2^(n-1)-1) := by
   cases' n with d
@@ -176,58 +172,31 @@ lemma even_sum (X : Finset ℕ) :even_sum_finset X := by
   simp_all only [mem_insert, or_true, implies_true]
   done
 
-def odd_sum_finset (X: Finset ℕ): Prop :=
+def sum_odds_finset (X: Finset ℕ): Prop :=
   (Even $ card X) ∧ (∀ x ∈ X, Odd x) → Even (∑ k in X, k)
 
-
-
-lemma even_sum_of_odd (X : Finset ℕ) : odd_sum_finset X := by
-  unfold odd_sum_finset Even Odd
-  intro h
-  sorry
-  -- have empty : odd_sum_finset ∅ := by
-  --   simp only [odd_sum_finset]
-  --   done
-
-  -- refine @Finset.induction ℕ odd_sum_finset _ empty ?_ X
-  -- intro a X' h g
-  -- unfold odd_sum_finset at *
-  -- intro h'
-
-  -- by_contra h'
-  -- push_neg at h'
-  -- have odd_card_X' : Odd (card X') := by
-  --   have ⟨hₗ, _⟩ := h'.1
-  --   rw [card_insert_of_not_mem h] at hₗ
-  --   exact odd_iff_even_add_one.mpr hₗ
-  --   done
-
-
-
-  -- by_cases h': Even (card X')
-  -- . rw [Finset.card_insert_of_not_mem h, imp_iff_not_or, not_and_or]
-  --   left; left
-  --   simp only [even_iff_not_odd, not_not, Even.add_one h']
-  -- . rw [sum_insert h, even_add]
-  --   intro h''
-  --   by_contra
-  --   have odd_card_X' : Odd (card X') := by
-  --     rw [odd_iff_not_even]
-  --     exact h'
-  --     done
-
-    -- constructor
-    -- . rw [imp_iff_not_or]
-    --   left
-    --   rw [even_iff_not_odd, not_not]
-    --   apply h''.2
-    --   simp_rw [mem_insert]
-    --   left
-    --   trivial
-    -- . contradiction
-
+lemma sum_odds (X : Finset ℕ) : sum_odds_finset X := by
+  have empty : sum_odds_finset ∅ := by
+    simp only [sum_odds_finset]
+    done
+  refine @Finset.induction ℕ sum_odds_finset _ empty ?_ X
+  intro a X' h g
+  unfold sum_odds_finset at *
+  intro h'
+  aesop
+  have odd_card_X' : Odd (card X') := by
+    exact odd_iff_even_add_one.mpr left
+    done
+  have h_odd_a : Odd a := by
+    rw [even_iff_not_odd, not_not] at left_1
+    exact left_1
+  have h_odd_sum : Odd (∑ k in X', k) := by
+    -- we need (odd number of odds --> odd sum)
+    sorry
+  have h_even_sum : Even (a + ∑ k in X', k) := by
+    exact Odd.add_odd h_odd_a h_odd_sum
+  exact h_even_sum
   done
-
 
 lemma filter_odd_sum (set' : Finset ℕ) (h: ¬Odd (card (filter Odd set'))):
  Even (∑ k in (set'.filter Odd), k) := by
@@ -239,7 +208,7 @@ lemma filter_odd_sum (set' : Finset ℕ) (h: ¬Odd (card (filter Odd set'))):
     obtain ⟨_,h2⟩ := hx
     rw [odd_iff_not_even]
     exact h2
-  apply (even_sum_of_odd odd_set ⟨h, h'⟩)
+  apply (sum_odds odd_set ⟨h, h'⟩)
   done
 
 lemma filter_even_sum (set' : Finset ℕ):
