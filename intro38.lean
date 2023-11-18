@@ -1,5 +1,6 @@
 import Mathlib.Tactic
 import Mathlib.Combinatorics.SimpleGraph.Basic
+import Mathlib.Data.Finset.Card
 
 open SimpleGraph
 open Finset
@@ -87,6 +88,12 @@ lemma inter_sdiff_super {α : Type u_1} [DecidableEq α] (A B C : Finset α)
     exact subset_trans (inter_subset_left B A) h
     done
 
+-- This is in mathlib, but my install can't find it??
+@[simp]
+lemma card_sdiff_add_card_inter {α : Type u_1} [DecidableEq α] (s t : Finset α) :
+    (s \ t).card + (s ∩ t).card = s.card := by
+  rw [← card_disjoint_union (disjoint_sdiff_inter _ _), sdiff_union_inter]
+
 --------------------------------------------------------------------------------
 ---| MAIN THEOREM |-------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -164,10 +171,11 @@ theorem intro38 {V : Finset ℕ } (n : ℕ) (G : SimpleGraph V) [DecidableRel G.
     exact mem_insert_of_mem
     done
 
-  -- degree of q in A is odd
-  have h₄ : ∀(p q : V), q ∈ (V.attach \ G.neighborFinset p).erase p
-    → Odd (card (G.neighborFinset q ∩ G.neighborFinset p))  := by
-    exact fun p q _ ↦ (fun {n} ↦ odd_iff_not_even.mpr) (g q p)
+  -- deg_A(q) is odd
+  have h₄ : ∀(p q : V), q ∈ closed_nh_comp p
+    → Odd (card (G.neighborFinset q ∩ closed_neighborFinset G p))  := by
+    sorry
+    -- exact fun p q _ ↦ (fun {n} ↦ odd_iff_not_even.mpr) (g q p)
     done
 
   --
@@ -189,18 +197,38 @@ theorem intro38 {V : Finset ℕ } (n : ℕ) (G : SimpleGraph V) [DecidableRel G.
     aesop_graph
     done
 
-  -- deg_B(q) is odd
-  have h₅ : ∀(p q : V), q ∈ closed_nh_comp p
-    → Odd (card (G.neighborFinset q ∩ closed_nh_comp p)) := by
-    intro p q h
-    sorry
+  have inter_eq_sdiff_comp_nh : ∀ (p q : V),
+    neighborFinset G q \ closed_nh_comp p
+    = neighborFinset G q ∩ closed_neighborFinset G p := by
+    aesop_graph
     done
 
-  have h₆ : ∀(p : V), ∑ q in (V.attach.erase p \ G.neighborFinset p),
-    card (G.neighborFinset q ∩ (V.attach.erase p \ G.neighborFinset p))
-    -- = 2 * -- number of edges in subgraph (V.attach.erase p \ G.neighborFinset p)
-    % 2 = 0 := by
+  -- example {α : Type u_1} [DecidableEq α] (s : Finset α) (t : Finset α) :
+  --   s ∩ t = s \ (s \ t) := by
+  --   exact (sdiff_sdiff_self_left s t).symm
+  --   done
+
+  -- deg_B(q) is odd
+  have degree_in_B_odd : ∀(p q : V), q ∈ closed_nh_comp p
+    → Odd (card (G.neighborFinset q ∩ closed_nh_comp p)) := by
+    intro p q h
+    rw [(sdiff_sdiff_self_left _ _).symm]
+    rw [card_sdiff (sdiff_subset _ _)]
+    apply Nat.Even.sub_odd _ (hdeg q) _
+    . apply le_trans
+      . exact Nat.le_add_right _ (card (neighborFinset G q ∩ closed_nh_comp p))
+      . rw [card_sdiff_add_card_inter]
+        exact Nat.le_refl _
+    . rw [inter_eq_sdiff_comp_nh]
+      exact h₄ p q h
+    done
+
+  -- The sum of the degrees of elements in B is odd
+  have sum_of_B_elem_deg_odd : ∀(p : V), Odd (∑ q in closed_nh_comp p,
+    (card (G.neighborFinset q ∩ closed_nh_comp p))) := by
      sorry
      done
+
+
 
   done
