@@ -2,15 +2,15 @@ import Mathlib.Tactic
 
 /-!
 # Intro 3 (pp. 18) | [Revista Matematica Timişoara]
-Let n be an odd integer greater than 1. Prove that the sequence [(n choose 1) ,..., (n choose (n-1)/2)] contains an odd number of odd numbers.
+Let n be an odd integer greater than 1. Prove that the sequence
+[(n choose 1) ,..., (n choose (n-1)/2)] contains an odd number of odd numbers.
 
 ## Solution
-The sum of the numbers in the given sequence equals 2^(n-1)-1, which is odd; hence, the result follows.
+The sum of the numbers in the given sequence equals 2^(n-1)-1, which is odd;
+ hence, the result follows.
 -/
 
-open Nat
-open BigOperators
-open Finset
+open Nat BigOperators Finset
 
 variable (n : ℕ)
 -- we first show that the sum of the given sequence is 2^(n-1)-1
@@ -36,7 +36,7 @@ lemma sub_right (k m : ℕ) (h: k + 2 = m): m - 2 = k := by
   done
 
 lemma aux1' (h: 1 < n): 2^n - 2 = ∑ k in Ico 1 n, choose n k := by
-  exact sub_right _ (2^n) (aux1 n h)
+  exact sub_right _ _ (aux1 n h)
   done
 
 lemma aux1'_2 (h: 1 < n): (∑ k in Ico 1 n, choose n k)/2 = (2^n-2)/2 := by
@@ -123,7 +123,8 @@ lemma sum_odd (h: 1 < n): Odd (∑ k in my_set n, choose n k) := by
   exact power_odd n h
   done
 
--- if the sum of the elements of a finset is odd, then the finset contains an odd number of odd numbers.
+-- if the sum of the elements of a finset is odd,
+-- then the finset contains an odd number of odd numbers.
 
 theorem odd_filter (set' : Finset ℕ) :
    ∑ k in set', k = ∑ k in (set'.filter Odd), k
@@ -162,12 +163,11 @@ lemma sum_minus_dist (X : Finset ℕ) (h: ∀ x ∈ X, x ≥ 1) :
 
 def sum_odds_finset (X: Finset ℕ): Prop :=
   (Even $ card X) ∧ (∀ x ∈ X, Odd x) → Even (∑ k in X, k)
-
-lemma sum_odds (X : Finset ℕ) : sum_odds_finset X := by
-  unfold sum_odds_finset Even
+lemma sum_odds (X : Finset ℕ) (h: Even $ card X) (h': ∀ x ∈ X, Odd x)
+  : Even (∑ k in X, k) := by
+  unfold Even at *
   simp_rw [←mul_two]
-  intro h
-  rcases h with ⟨⟨r, hr⟩, h'⟩
+  cases' h with r hr
   use ((∑ k in X, (k-1) / 2) + r)
   rw [right_distrib, sum_mul]
   have h'': ∀ (x : ℕ), x ∈ X → x ≥ 1 := by
@@ -188,12 +188,11 @@ lemma sum_odds (X : Finset ℕ) : sum_odds_finset X := by
       done
     exact Nat.div_mul_cancel h₁
     done
-  rw [h, sum_minus_dist X, ← card_eq_sum_ones X, hr]
+  rw [h, sum_minus_dist X h'', ← card_eq_sum_ones X, hr, ← two_mul, mul_comm]
   apply Nat.eq_add_of_sub_eq _ rfl
-  · rw [← hr, card_eq_sum_ones X]
-    exact sum_le_sum h''
-    done
-  exact h''
+  rw [← two_mul, mul_comm] at hr
+  rw [← hr, card_eq_sum_ones X]
+  exact sum_le_sum h''
   done
 
 lemma filter_odd_sum (set' : Finset ℕ) (h: ¬Odd (card (filter Odd set'))):
@@ -206,7 +205,7 @@ lemma filter_odd_sum (set' : Finset ℕ) (h: ¬Odd (card (filter Odd set'))):
     obtain ⟨_,h2⟩ := hx
     rw [odd_iff_not_even]
     exact h2
-  apply (sum_odds odd_set ⟨h, h'⟩)
+  apply (sum_odds odd_set h h')
   done
 
 lemma filter_even_sum (set' : Finset ℕ):
@@ -219,13 +218,12 @@ lemma filter_even_sum (set' : Finset ℕ):
   apply (even_sum even_set h)
   done
 
-theorem odd_number_of_odd_numbers (set' : Finset ℕ) (h : Odd (∑ k in set', k)) :
+theorem odd_number_of_odd_numbers (set' : Finset ℕ) (h : Odd (∑ k in set', k)):
   Odd (card (set'.filter Odd)) := by
   contrapose h
   rw [odd_iff_not_even, not_not, odd_filter]
   apply Even.add (filter_odd_sum set' h) (filter_even_sum set')
   done
-
 
 -- we finally prove the main result
 
