@@ -36,29 +36,25 @@ lemma sub_right (k m : ℕ) (h: k + 2 = m): m - 2 = k := by
   done
 
 lemma aux1' (h: 1 < n): 2^n - 2 = ∑ k in Ico 1 n, choose n k := by
-  have h₁ :  ∑ k in Ico 1 n, choose n k + 2 = 2^n := by
-    exact aux1 n h
-  exact sub_right (∑ k in Ico 1 n, choose n k) (2^n) h₁
+  exact sub_right _ (2^n) (aux1 n h)
   done
 
 lemma aux1'_2 (h: 1 < n): (∑ k in Ico 1 n, choose n k)/2 = (2^n-2)/2 := by
   rw [aux1' n h]
   done
 
-#check choose_symm
-
 def my_set : Finset ℕ := Ico 1 ((n+1)/ 2)
 
 lemma binom_symm (h: 1 < n): ∑ k in Ico 1 n, choose n k
   = 2 * ∑ k in my_set n, choose n k := by
   unfold my_set
-  have h₁ : 2 * n ≥ n + 1 := by linarith
   have g :  (n+1) / 2 ≤ n := by
     apply Nat.div_le_of_le_mul
-    exact h₁
+    linarith
     done
   rw [← sum_Ico_consecutive _ _ g]
-  · sorry
+  · extract_goal
+    sorry
   · have h''' : 0 < 2 := by linarith
     have h': 2 ≤ n+1 := by linarith
     refine (Nat.le_div_iff_mul_le ?k0).mpr h'
@@ -68,24 +64,17 @@ lemma binom_symm (h: 1 < n): ∑ k in Ico 1 n, choose n k
 
 lemma binom_symm_2 (h: 1 < n): ∑ k in my_set n, choose n k
   =  (∑ k in Ico 1 n, choose n k)/2 := by
-  have h₁ : 0 < 2 := by norm_num
-  have h₂ : ∑ k in Ico 1 n, choose n k = 2 * ∑ k in my_set n, choose n k
-    := by exact binom_symm _ h
-  rw [Nat.div_eq_of_eq_mul_right h₁ h₂]
-  done
-
-lemma aux4: 2^n-2 = 2*(2^(n-1)-1) := by
-  cases' n with d
-  · simp
-  · simp
-    rw [Nat.pow_succ', Nat.mul_sub_left_distrib]
+  rw [Nat.div_eq_of_eq_mul_right (by norm_num) (by exact binom_symm _ h)]
   done
 
 lemma aux4': (2^n-2)/2 = 2^(n-1)-1 := by
-  have h₁ : 0 < 2 := by norm_num
-  have h₂: 2^n-2 = 2*(2^(n-1)-1)
-    := by exact aux4 n
-  rw [Nat.div_eq_of_eq_mul_right h₁ h₂]
+  have aux4: 2^n-2 = 2*(2^(n-1)-1) := by
+    cases' n with d
+    · simp
+    · simp
+      rw [Nat.pow_succ', Nat.mul_sub_left_distrib]
+    done
+  rw [Nat.div_eq_of_eq_mul_right (by norm_num) (by exact aux4)]
   done
 
 lemma aux5 (h: 1 < n): ∑ k in my_set n, choose n k = 2^(n-1)-1 := by
@@ -115,8 +104,7 @@ lemma nat_sub (k : ℕ)(h₁ : k > 1) :
   cases' k with d
   · contradiction
   · simp
-    have h₂ : 0 < d := by linarith
-    exact Nat.eq_add_of_sub_eq h₂ rfl
+    exact Nat.eq_add_of_sub_eq (by linarith) rfl
     done
 
 lemma power_odd (h: 1 < n): Odd (2^(n-1) - 1) := by
@@ -125,8 +113,7 @@ lemma power_odd (h: 1 < n): Odd (2^(n-1) - 1) := by
     have h₂ : 1 ≤ 2^(n-2) := by exact one_le_two_pow (n - 2)
     linarith
     done
-  rw [pow_prop2 n h]
-  rw [Nat.mul_sub_left_distrib, mul_comm]
+  rw [pow_prop2 n h, Nat.mul_sub_left_distrib, mul_comm]
   norm_num
   rw [nat_sub _ h₁]
   done
@@ -161,18 +148,16 @@ lemma even_sum (X : Finset ℕ): even_sum_finset X := by
 lemma one_leq_odd (x : ℕ) (h' : Odd x) : 1 ≤ x := by
     unfold Odd at h'
     cases' h' with r hr
-    rw [hr]
     linarith
     done
 
 lemma sum_minus_dist (X : Finset ℕ) (h: ∀ x ∈ X, x ≥ 1) :
     ∑ x in X, (x - 1) = ∑ x in X, x - ∑ x in X, 1 := by
-  rw [eq_tsub_iff_add_eq_of_le]
+  rw [eq_tsub_iff_add_eq_of_le (sum_le_sum h)]
   · rw [←sum_add_distrib]
     apply sum_congr rfl
     intro x hx
     exact Nat.sub_add_cancel (h x hx)
-  · exact sum_le_sum h
   done
 
 def sum_odds_finset (X: Finset ℕ): Prop :=
@@ -204,11 +189,10 @@ lemma sum_odds (X : Finset ℕ) : sum_odds_finset X := by
     exact Nat.div_mul_cancel h₁
     done
   rw [h, sum_minus_dist X, ← card_eq_sum_ones X, hr]
-  apply Nat.eq_add_of_sub_eq
+  apply Nat.eq_add_of_sub_eq _ rfl
   · rw [← hr, card_eq_sum_ones X]
     exact sum_le_sum h''
     done
-  · rfl
   exact h''
   done
 
@@ -231,22 +215,17 @@ lemma filter_even_sum (set' : Finset ℕ):
   have h : ∀ x ∈ even_set, Even x := by
     intros x hx
     simp at hx
-    obtain ⟨_,h2⟩ := hx
-    exact h2
+    exact hx.2
   apply (even_sum even_set h)
   done
 
 theorem odd_number_of_odd_numbers (set' : Finset ℕ) (h : Odd (∑ k in set', k)) :
   Odd (card (set'.filter Odd)) := by
   contrapose h
-  simp
-  rw [odd_filter]
-  have h1: Even (∑ k in filter (¬ Odd ·) set', k)
-    := by exact filter_even_sum set'
-  have h2: Even (∑ k in filter (Odd ·) set', k)
-    := by exact filter_odd_sum set' h
-  apply Even.add h2 h1
+  rw [odd_iff_not_even, not_not, odd_filter]
+  apply Even.add (filter_odd_sum set' h) (filter_even_sum set')
   done
+
 
 -- we finally prove the main result
 
