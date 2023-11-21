@@ -19,28 +19,24 @@ variable (n : ℕ)
 lemma split_sum (h: 1 < n): ∑ k in Ico 0 (n+1), choose n k
     = choose n 0 + ∑ k in Ico 1 n, choose n k + choose n n := by
   rw [sum_eq_sum_Ico_succ_bot, sum_Ico_succ_top]
-  norm_num
   all_goals linarith
 
-lemma aux1 (h: 1 < n): ∑ k in Ico 1 n, choose n k + 2 = 2^n := by
+lemma sum_shift (h: 1 < n): ∑ k in Ico 1 n, choose n k + 2 = 2^n := by
   rw [← sum_range_choose n, ← Ico_zero_eq_range]
   simp_rw [split_sum n h]
   norm_num
   exact add_comm _ _
 
-lemma sub_right (k m : ℕ) (h: k + 2 = m): m - 2 = k := by
-  rw [Nat.sub_eq_of_eq_add]
-  rw [h]
-
-lemma aux2 (h: 1 < n): (∑ k in Ico 1 n, choose n k) / 2 = (2^n-2) / 2 := by
-  have h' : 2^n - 2 = ∑ k in Ico 1 n, choose n k := sub_right _ _ (aux1 n h)
+lemma sum_div2 (h: 1 < n): (∑ k in Ico 1 n, choose n k) / 2 = (2^n-2) / 2 := by
+  have h' : 2^n - 2 = ∑ k in Ico 1 n, choose n k := by
+    exact Nat.sub_eq_of_eq_add (sum_shift n h).symm
   rw [h']
 
-def my_set : Finset ℕ := Ico 1 ((n+1)/ 2)
+def my_set : Finset ℕ := Ico 1 ((n+1) / 2)
 
 -- preliminary lemmas needed for binom_symm_bij
 
-lemma ineq1 (n x : ℕ) (h1 : 1 ≤ x) (h2: x ≤ n) (h3 : x < (n + 1) / 2) :
+lemma ineq1 (x : ℕ) (h1 : 1 ≤ x) (h2: x ≤ n) (h3 : x < (n + 1) / 2) :
     (n + 1) / 2 ≤ n - x := by
   rw [le_tsub_iff_left h2]
   have h := (lt_iff_le_pred (by linarith)).mp h3
@@ -48,15 +44,20 @@ lemma ineq1 (n x : ℕ) (h1 : 1 ≤ x) (h2: x ≤ n) (h3 : x < (n + 1) / 2) :
   rw [←Nat.sub_add_comm (by linarith), ←mul_two]
   apply le_trans (Nat.sub_le_sub_right (Nat.div_mul_le_self _ _) 1) (le_refl _)
 
-lemma ineq2 (n x : ℕ)(h_1 : 1 < n)(hn: Odd n) (hx : (n + 1) / 2 ≤ x) (h : x < n)
+lemma ineq2 (x : ℕ)(hn: Odd n)(h': x < n)(hx : (n + 1) / 2 ≤ x)
     : n - x < (n + 1) / 2 := by
-  sorry
+  unfold Odd at hn
+  cases' hn with r hr
+  rw [hr] at hx ⊢
+  ring_nf at *
+  simp [add_comm, succ_eq_add_one] at *
+  apply Nat.sub_lt_right_of_lt_add (by linarith) (by linarith)
 
 lemma ineq3 {n a₁ : ℕ}(right : a₁ < (n + 1) / 2) : a₁ ≤ n := by
-  have : (n + 1) / 2 ≤ (n + 1) :=  Nat.div_le_self (n + 1) 2
+  have : (n + 1) / 2 ≤ (n + 1) := Nat.div_le_self (n + 1) 2
   linarith
 
-lemma nat_sub_eq {n a₁ a₂: ℕ} (a: n - a₁ = n - a₂)
+lemma nat_sub_eq {a₁ a₂: ℕ} (a: n - a₁ = n - a₂)
     (h4: a₁ ≤ n) (h5: a₂ ≤ n) : a₁ = a₂ := by
   apply @Nat.add_left_cancel n
   apply Nat.eq_add_of_sub_eq (le_add_right h5)
@@ -87,20 +88,19 @@ theorem binom_symm_bij (n : ℕ) (h : 1 < n)(hn : Odd n) :
         · exact ineq3 h2
       · refine tsub_lt_self (by linarith) h1
     · apply h₂
-      apply Nat.div_le_of_le_mul
-      linarith
+      apply Nat.div_le_of_le_mul (by linarith)
     · intro x y hx hy hxy
       rw [mem_Ico] at hx hy
       rcases hx with ⟨_ , hx2⟩
       rcases hy with ⟨_ , hy2⟩
-      exact nat_sub_eq hxy (ineq3 hx2) (ineq3 hy2)
+      exact nat_sub_eq n hxy (ineq3 hx2) (ineq3 hy2)
     · simp only [ge_iff_le, mem_Ico, exists_prop, and_imp]
       intro x hx h'
       use n-x
       constructor
       · constructor
         · exact le_tsub_of_add_le_left h'
-        · exact ineq2 n x h hn hx h'
+        · exact ineq2 n x hn h' hx
       · symm
         apply Nat.sub_sub_self (by linarith)
   rw [h']
@@ -110,8 +110,7 @@ lemma binom_symm (h: 1 < n)(hn: Odd n): ∑ k in Ico 1 n, choose n k
     = 2 * ∑ k in my_set n, choose n k := by
   unfold my_set
   have g : (n+1) / 2 ≤ n := by
-    apply Nat.div_le_of_le_mul
-    linarith
+    apply Nat.div_le_of_le_mul (by linarith)
   rw [← sum_Ico_consecutive _ _ g]
   · rw [binom_symm_bij n h hn]
   · refine (Nat.le_div_iff_mul_le ?k0).mpr (by linarith)
@@ -119,18 +118,18 @@ lemma binom_symm (h: 1 < n)(hn: Odd n): ∑ k in Ico 1 n, choose n k
 
 lemma binom_symm_2 (h: 1 < n)(hn: Odd n): ∑ k in my_set n, choose n k
     = (∑ k in Ico 1 n, choose n k) / 2 := by
-  rw [Nat.div_eq_of_eq_mul_right (by norm_num) (by exact binom_symm _ h hn)]
+  rw [Nat.div_eq_of_eq_mul_right (by norm_num) (binom_symm _ h hn)]
 
-lemma aux4': (2^n-2) / 2 = 2^(n-1)-1 := by
-  have aux4: 2^n-2 = 2 * (2^(n-1)-1) := by
-    cases' n with d
-    · simp
-    · simp
-      rw [Nat.pow_succ', Nat.mul_sub_left_distrib]
-  rw [Nat.div_eq_of_eq_mul_right (by norm_num) (by exact aux4)]
+lemma pow_2_div_2: (2^n-2) / 2 = 2^(n-1)-1 := by
+  have h: 2^n-2 = 2 * (2^(n-1)-1) := by
+    cases' n with d <;>
+      simp
+    rw [Nat.pow_succ', Nat.mul_sub_left_distrib]
+  rw [Nat.div_eq_of_eq_mul_right (by norm_num) h]
 
-lemma aux5 (h: 1 < n)(hn: Odd n): ∑ k in my_set n, choose n k = 2^(n-1)-1 := by
-  rw [binom_symm_2 n h hn, aux2 n h, aux4' n]
+theorem sum_equals_pow2 (h: 1 < n)(hn: Odd n)
+    : ∑ k in my_set n, choose n k = 2^(n-1)-1 := by
+  rw [binom_symm_2 n h hn, sum_div2 n h, pow_2_div_2 n]
 
 -- we prove that 2^(n-1)-1 is always odd for n > 1.
 
@@ -140,13 +139,13 @@ lemma pow_prop1 (m: ℕ)(h: 0 < m) : 2^m = 2^(m-1) * 2 := by
   · simp
     rw [Nat.pow_succ', mul_comm]
 
-lemma pow_prop2 (m: ℕ)(h: 1 < m) : 2^(m-1) = 2^(m-2) * 2 := by
+lemma pow_prop2 (m: ℕ) (h: 1 < m) : 2^(m-1) = 2^(m-2) * 2 := by
   cases' m with d
   · contradiction
   · simp
     exact pow_prop1 d (by linarith)
 
-lemma nat_sub (k : ℕ)(h₁ : k > 1) :
+lemma nat_sub (k : ℕ) (h₁ : k > 1) :
   k - 1 = k - 2 + 1 := by
   cases' k with d
   · contradiction
@@ -155,21 +154,20 @@ lemma nat_sub (k : ℕ)(h₁ : k > 1) :
 
 lemma power_odd (h: 1 < n): Odd (2^(n-1) - 1) := by
   use 2^(n-2)-1
-  have h₁ : 1 < 2 * 2 ^ (n - 2) := by
-    have h₂ : 1 ≤ 2^(n-2) := by exact one_le_two_pow (n - 2)
-    linarith
+  have h₂ : 1 ≤ 2^(n-2) := one_le_two_pow (n - 2)
+  have h₁ : 1 < 2 * 2 ^ (n - 2) := by linarith
   rw [pow_prop2 n h, Nat.mul_sub_left_distrib, mul_comm]
   norm_num
   rw [nat_sub _ h₁]
 
 lemma sum_odd (h: 1 < n)(hn: Odd n): Odd (∑ k in my_set n, choose n k) := by
-  rw [aux5 n h hn]
+  rw [sum_equals_pow2 n h hn]
   exact power_odd n h
 
 -- if the sum of the elements of a finset is odd,
 -- then the finset contains an odd number of odd numbers.
 
-theorem odd_filter (s : Finset ℕ) :
+lemma odd_filter (s : Finset ℕ) :
     ∑ k in s, k = ∑ k in (s.filter Odd), k
     +  ∑ k in (s.filter (¬ Odd ·)), k := by
   exact (sum_filter_add_sum_filter_not s _ _).symm
@@ -191,7 +189,7 @@ lemma one_leq_odd (x : ℕ) (h' : Odd x) : 1 ≤ x := by
     cases' h' with r hr
     linarith
 
-lemma sum_minus_dist (X : Finset ℕ) (h: ∀ x ∈ X, x ≥ 1) :
+lemma sum_minus (X : Finset ℕ) (h: ∀ x ∈ X, x ≥ 1) :
     ∑ x in X, (x - 1) = ∑ x in X, x - ∑ x in X, 1 := by
   rw [eq_tsub_iff_add_eq_of_le (sum_le_sum h)]
   · rw [←sum_add_distrib]
@@ -199,7 +197,7 @@ lemma sum_minus_dist (X : Finset ℕ) (h: ∀ x ∈ X, x ≥ 1) :
     intro x hx
     exact Nat.sub_add_cancel (h x hx)
 
-lemma sum_odds (X : Finset ℕ) (h: Even <| card X) (h': ∀ x ∈ X, Odd x)
+lemma sum_odds (X : Finset ℕ) (h: Even X.card) (h': ∀ x ∈ X, Odd x)
     : Even (∑ k in X, k) := by
   unfold Even at *
   simp_rw [←mul_two]
@@ -221,7 +219,7 @@ lemma sum_odds (X : Finset ℕ) (h: Even <| card X) (h': ∀ x ∈ X, Odd x)
       rw [hr]
       norm_num
     exact Nat.div_mul_cancel h₁
-  rw [h, sum_minus_dist X h'', ← card_eq_sum_ones X, hr, ← two_mul, mul_comm]
+  rw [h, sum_minus X h'', ← card_eq_sum_ones X, hr, ← two_mul, mul_comm]
   apply Nat.eq_add_of_sub_eq _ rfl
   rw [← two_mul, mul_comm] at hr
   rw [← hr, card_eq_sum_ones X]
@@ -261,7 +259,7 @@ theorem odd_number_of_odd_numbers (s : Finset ℕ) (h : Odd (∑ k in s, k)):
 def binomial_set (n : ℕ) : Finset ℕ := (my_set n).image (Nat.choose n ·)
 
 theorem intro3 {n : ℕ} (h : Odd n) (h': 1 < n) :
-    Odd (card ((binomial_set n).filter Odd)) := by
+    Odd <| card <| (binomial_set n).filter Odd := by
   have h1 : Odd (∑ k in my_set n, Nat.choose n k) := by
     exact sum_odd n h' h
   have h2 : Odd (∑ k in image (fun x ↦ Nat.choose n x) (my_set n), k) := by
