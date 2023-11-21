@@ -94,6 +94,84 @@ lemma card_sdiff_add_card_inter {α : Type u_1} [DecidableEq α] (s t : Finset �
     (s \ t).card + (s ∩ t).card = s.card := by
   rw [← card_disjoint_union (disjoint_sdiff_inter _ _), sdiff_union_inter]
 
+
+
+-- lemma odd_sum_odd (X : Finset ℕ) (h : Odd X.card) (h' : ∀x∈X, Odd x)
+--   : Odd $ ∑ x in X, x := by
+--   unfold Odd at *
+--   let (S : ℕ) := ∑ x in X, Classical.choose (h' x ?_)
+--   . sorry
+--   . sorry
+--   done
+
+lemma one_leq_odd (x : ℕ) (h' : Odd x) : 1 ≤ x := by
+    unfold Odd at h'
+    cases' h' with r hr
+    linarith
+
+lemma sum_minus (X : Finset ℕ) (h: ∀ x ∈ X, x ≥ 1) :
+    ∑ x in X, (x - 1) = ∑ x in X, x - ∑ x in X, 1 := by
+  rw [eq_tsub_iff_add_eq_of_le (sum_le_sum h)]
+  · rw [←sum_add_distrib]
+    apply sum_congr rfl
+    intro x hx
+    exact Nat.sub_add_cancel (h x hx)
+
+lemma sum_odds (X : Finset ℕ) (h: Even X.card) (h': ∀ x ∈ X, Odd x)
+    : Even (∑ k in X, k) := by
+  unfold Even at *
+  simp_rw [←mul_two]
+  cases' h with r hr
+  use ((∑ k in X, (k-1) / 2) + r)
+  rw [right_distrib, sum_mul]
+  have h'': ∀ (x : ℕ), x ∈ X → x ≥ 1 := by
+    intros x hx
+    specialize h' x hx
+    exact one_leq_odd x h'
+  have h: ∑ x in X, (x - 1) / 2 * 2 = ∑ x in X, (x - 1) := by
+    apply sum_congr rfl
+    intro x hx
+    have h₁ : 2 ∣ (x - 1) := by
+      specialize h' x hx
+      apply even_iff_two_dvd.mp
+      specialize h'' x hx
+      cases' h' with r hr
+      rw [hr]
+      norm_num
+    exact Nat.div_mul_cancel h₁
+  rw [h, sum_minus X h'', ← card_eq_sum_ones X, hr, ← two_mul, mul_comm]
+  apply Nat.eq_add_of_sub_eq _ rfl
+  rw [← two_mul, mul_comm] at hr
+  rw [← hr, card_eq_sum_ones X]
+  exact sum_le_sum h''
+
+def odd_elements (X : Finset ℕ) : Prop := ∀x∈X, Odd x
+#check Nat.twoStepInduction
+
+def sum_of_odd_prop (c : ℕ): Prop :=
+  ∀(X : Finset ℕ), Odd c → X.card = c → odd_elements X → (Odd $ ∑ x in X, x)
+
+lemma odd_sum_odd
+  : ∀(c:ℕ), sum_of_odd_prop c := by
+  intro c
+  apply twoStepInduction _ _ _
+  . unfold sum_of_odd_prop
+    intro _ h
+    contradiction
+  . unfold sum_of_odd_prop
+    intro X _ h h'
+    rw [card_eq_one] at h
+    cases h with | intro y g =>
+    rw [g]
+    simp only [sum_singleton, h' y, g, mem_singleton]
+  . intro c h₀ h₁
+    unfold sum_of_odd_prop
+    intro X g g' g''
+
+
+
+  done
+
 --------------------------------------------------------------------------------
 ---| MAIN THEOREM |-------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -226,8 +304,11 @@ theorem intro38 {V : Finset ℕ } (n : ℕ) (G : SimpleGraph V) [DecidableRel G.
   -- The sum of the degrees of elements in B is odd
   have sum_of_B_elem_deg_odd : ∀(p : V), Odd (∑ q in closed_nh_comp p,
     (card (G.neighborFinset q ∩ closed_nh_comp p))) := by
-     sorry
-     done
+    simp only [odd_iff_not_even, Subtype.forall]
+    intro a b
+    rw [← odd_iff_not_even]
+
+    done
 
 
 
