@@ -203,7 +203,7 @@ lemma power_odd (h: 1 < n): Odd (2^(n - 1) - 1) := by
 lemma sum_odd (h: 1 < n)(hn: Odd n): Odd (∑ k in my_set n, choose n k) := by
   rw [sum_equals_pow2 n h hn] ; exact power_odd n h
 
--- the next aim is to prove the odd_number_of_odd_numbers theorem
+-- next aim is to prove the odd_number_of_odd_numbers theorem
 
 -- summing elements of a set = summing the odd and not odd elements of the set
 lemma odd_filter (s : Finset ℕ) :
