@@ -6,19 +6,20 @@ Let n be an odd integer greater than 1. Prove that the sequence
 [(n choose 1) ,..., (n choose (n-1)/2)] contains an odd number of odd numbers.
 
 ## Solution
-The sum of the numbers in the given sequence equals 2^(n-1)-1, which is odd;
- hence, the result follows.
+The sum of the numbers in the given sequence equals 2^(n-1)-1, which is always
+odd for n > 1. The sum being odd is sufficient to conclude that the sequence
+contains an odd number of odd numbers.
 -/
 
 --------------------------------------------------------------------------------
 ---| USEFUL LEMMAS |------------------------------------------------------------
 --------------------------------------------------------------------------------
-section prep_lemmas
+section useful_lemmas
 
 open Nat Set BigOperators
 
--- a lemma which will be in Mathlib in the future
--- , thanks Gareth for temporary version
+-- f k < f (k+1) on Ico a b implies f is strictly monotone on Icc a b
+-- this lemma will be in Mathlib in future (thanks Gareth for temporary proof)
 lemma strictMono_s_of_lt_succ {a b : ℕ}{f : ℕ → ℕ}
     (hf : ∀ k ∈ Ico a b, f k < f k.succ) : StrictMonoOn f (Icc a b) := by
   by_cases hab : a ≤ b
@@ -45,8 +46,7 @@ lemma strictMono_s_of_lt_succ {a b : ℕ}{f : ℕ → ℕ}
   · rw [Icc_eq_empty_of_lt (lt_of_not_ge hab)]
     exact fun _ h ↦ h.elim
 
--- start of general useful lemmas for the proof
-
+-- le version of choose_lt_succ_of_le_half_left in mathlib
 lemma choose_lt_succ_of_le_half_left {r n : ℕ} (h : r + 1 ≤ n / 2) :
     Nat.choose n r < Nat.choose n (r + 1) := by
   refine' lt_of_mul_lt_mul_right _ (Nat.zero_le (n - r))
@@ -56,41 +56,9 @@ lemma choose_lt_succ_of_le_half_left {r n : ℕ} (h : r + 1 ≤ n / 2) :
     have := Nat.mul_le_of_le_div 2 _ _ h
     rwa [add_mul, one_mul] at this
 
-lemma ineq0 (n r : ℕ) : n ≤ (1 + r * 2) / 2 ↔ n < r + 1 := by
-  constructor <;> intro h
-  · contrapose! h
-    exact Nat.div_lt_of_lt_mul (by linarith)
-  · exact (Nat.le_div_iff_mul_le' (by linarith)).mpr (by linarith)
+end useful_lemmas
 
-lemma icc_ico (n : ℕ) (h: Odd n) : Finset.Icc 1 (n / 2)
-    = Finset.Ico 1 ((n + 1) / 2) := by
-  unfold Odd at h
-  cases' h with r hr
-  rw [hr]
-  ring_nf
-  simp only [add_comm, succ_eq_add_one] at *
-  ext x
-  simp [mem_Icc, mem_Ico, ineq0]
-
-open Finset
-
-theorem binom_sum_range {n : ℕ} :
-    ∑ k in image (fun x => Nat.choose n x) (Icc 1 (n / 2)), k
-    = ∑ k in Icc 1 (n / 2), Nat.choose n k := by
-  rw [sum_image]
-  apply StrictMonoOn.injOn
-  simp only [mem_val, Finset.mem_Icc]
-  apply strictMono_s_of_lt_succ
-  exact (fun k hk ↦ choose_lt_succ_of_le_half_left (Set.mem_Ico.mp hk).right)
-
-theorem binom_sum_range_shift {n : ℕ} (h: Odd n) :
-    ∑ k in image (fun x => Nat.choose n x) (Ico 1 ((n + 1) / 2)), k
-    = ∑ k in Ico 1 ((n + 1) / 2), Nat.choose n k := by
-  apply icc_ico n h ▸ binom_sum_range
-
-end prep_lemmas
-
-open Nat BigOperators Finset
+open Nat Finset BigOperators
 
 variable (n : ℕ)
 
@@ -112,9 +80,7 @@ lemma sum_div2 (h: 1 < n): (∑ k in Ico 1 n, choose n k) / 2 = (2^n-2) / 2 := b
     exact Nat.sub_eq_of_eq_add (sum_shift n h).symm
   rw [h']
 
-def my_set : Finset ℕ := Ico 1 ((n+1) / 2)
-
--- lemmas needed for binom_symm_bij
+-- start of lemmas needed for binom_symm_bij
 
 lemma ineq1 (x : ℕ) (h1 : 1 ≤ x) (h2: x ≤ n) (h3 : x < (n + 1) / 2) :
     (n + 1) / 2 ≤ n - x := by
@@ -144,6 +110,7 @@ lemma nat_sub_eq {a₁ a₂: ℕ} (a: n - a₁ = n - a₂)
   rw [← tsub_add_eq_add_tsub h5]
   exact (eq_tsub_iff_add_eq_of_le h4).mp a.symm
 
+-- key lemma using binomial symmetry: choose n i = choose n (n - i)
 lemma binom_bij (g : (n+1) / 2 ≤ n) : ∀ i ∈ Ico 1 ((n + 1) / 2), choose n i
     = choose n (n - i) := by
   intro i hi
@@ -153,6 +120,8 @@ lemma binom_bij (g : (n+1) / 2 ≤ n) : ∀ i ∈ Ico 1 ((n + 1) / 2), choose n 
 
 -- end of lemmas needed for binom_symm_bij
 
+-- essentially proving ∑ i Ico 1 ((n + 1) / 2), choose n i
+--                   = ∑ i Ico ((n + 1) / 2) n, choose n i
 theorem binom_symm_bij (n : ℕ) (h : 1 < n)(hn : Odd n) :
     ∑ i in Ico 1 ((n + 1) / 2), Nat.choose n i
     + ∑ i in Ico ((n + 1) / 2) n, Nat.choose n i
@@ -183,6 +152,8 @@ theorem binom_symm_bij (n : ℕ) (h : 1 < n)(hn : Odd n) :
   ring
   done
 
+def my_set : Finset ℕ := Ico 1 ((n+1) / 2)
+
 lemma binom_symm (h: 1 < n) (hn: Odd n) :
     ∑ k in Ico 1 n, choose n k = 2 * ∑ k in my_set n, choose n k := by
   unfold my_set
@@ -204,7 +175,7 @@ theorem sum_equals_pow2 (h: 1 < n) (hn: Odd n)
     : ∑ k in my_set n, choose n k = 2^(n-1)-1 := by
   rw [binom_symm_2 n h hn, sum_div2 n h, pow_2_div_2 n]
 
--- we prove that 2^(n-1)-1 is always odd for n > 1.
+-- the next aim is to show that 2^(n-1)-1 is always odd for 1 < n.
 
 lemma pow_prop1 (m: ℕ) (h: 0 < m) : 2^m = 2^(m - 1) * 2 := by
   cases' m with d
@@ -218,27 +189,29 @@ lemma nat_sub (k : ℕ) (h₁ : k > 1) :
   k - 1 = k - 2 + 1 := by
   cases' k with d
   · contradiction
-  · simp
-    exact Nat.eq_add_of_sub_eq (by linarith) rfl
+  · simp ; exact Nat.eq_add_of_sub_eq (by linarith) rfl
 
-lemma power_odd (h: 1 < n): Odd (2^(n-1) - 1) := by
+-- 2^(n-1)-1 is always odd for 1 < n
+lemma power_odd (h: 1 < n): Odd (2^(n - 1) - 1) := by
   use 2^(n - 2) - 1
-  have : 1 ≤ 2^(n-2) := one_le_two_pow (n - 2)
+  have : 1 ≤ 2^(n - 2) := one_le_two_pow (n - 2)
   rw [pow_prop2 n h, Nat.mul_sub_left_distrib, mul_comm]
   rw [nat_sub _ (by linarith)]
   norm_num
 
+-- sum of the elements in the given sequence is odd
 lemma sum_odd (h: 1 < n)(hn: Odd n): Odd (∑ k in my_set n, choose n k) := by
   rw [sum_equals_pow2 n h hn] ; exact power_odd n h
 
--- if the sum of the elements of a finset is odd,
--- then the finset contains an odd number of odd numbers.
+-- the next aim is to prove the odd_number_of_odd_numbers theorem
 
+-- summing elements of a set = summing the odd and not odd elements of the set
 lemma odd_filter (s : Finset ℕ) :
     ∑ k in s, k = ∑ k in (s.filter Odd), k
     +  ∑ k in (s.filter (¬ Odd ·)), k := by
   exact (sum_filter_add_sum_filter_not s _ _).symm
 
+-- sum of several even numbers is always even
 def even_sum_finset (X: Finset ℕ) : Prop :=
   (∀ x ∈ X, Even x) → Even (∑ k in X, k)
 
@@ -251,6 +224,7 @@ lemma even_sum (X : Finset ℕ): even_sum_finset X := by
   rw [sum_insert h, even_add]
   simp_all only [mem_insert, or_true, implies_true]
 
+-- in a finset of odd elements, parity of cardinality equals parity of sum
 def odd_set_card_odd_iff_sum_odd (S : Finset ℕ) :=
   (∀ x ∈ S, Odd x) → (Odd (∑ s in S, s) ↔ Odd S.card)
 
@@ -267,8 +241,8 @@ theorem sum_odd_odd :
     apply h'
     intro x hx
     exact (ha x) (mem_insert_of_mem hx)
-  done
 
+-- the sum of the even elements in a finset is even
 lemma filter_even_sum (s : Finset ℕ):
     Even (∑ k in filter (¬ Odd ·) s, k) := by
   apply even_sum (filter (¬ Odd ·) s)
@@ -276,6 +250,7 @@ lemma filter_even_sum (s : Finset ℕ):
   simp at hx
   exact hx.2
 
+-- sum of elements in set is odd --> set contains an odd number of odd numbers
 theorem odd_number_of_odd_numbers (s : Finset ℕ) (h : Odd (∑ k in s, k)):
     Odd (card <| s.filter Odd) := by
   contrapose h
@@ -287,6 +262,43 @@ theorem odd_number_of_odd_numbers (s : Finset ℕ) (h : Odd (∑ k in s, k)):
   exact h
   intro x hx
   exact (mem_filter.mp hx).2
+
+-- several simple lemmas needed to prove binom_sum_range_shift
+
+lemma ineq0 (n r : ℕ) : n ≤ (1 + r * 2) / 2 ↔ n < r + 1 := by
+  constructor <;> intro h
+  · contrapose! h
+    exact Nat.div_lt_of_lt_mul (by linarith)
+  · exact (Nat.le_div_iff_mul_le' (by linarith)).mpr (by linarith)
+
+lemma icc_ico (n : ℕ) (h: Odd n) : Finset.Icc 1 (n / 2)
+    = Finset.Ico 1 ((n + 1) / 2) := by
+  unfold Odd at h
+  cases' h with r hr
+  rw [hr]
+  ring_nf
+  simp only [add_comm, succ_eq_add_one] at *
+  ext x
+  simp [mem_Icc, mem_Ico, ineq0]
+
+open Finset
+
+-- proof of following lemma uses injectivity of choose function on Icc 1 (n / 2)
+lemma binom_sum_range {n : ℕ} :
+    ∑ k in image (fun x => Nat.choose n x) (Icc 1 (n / 2)), k
+    = ∑ k in Icc 1 (n / 2), Nat.choose n k := by
+  rw [sum_image]
+  apply StrictMonoOn.injOn
+  simp only [mem_val, Finset.mem_Icc]
+  apply strictMono_s_of_lt_succ
+  exact (fun k hk ↦ choose_lt_succ_of_le_half_left (Set.mem_Ico.mp hk).right)
+
+-- lemma needed to convert previos results to the problem statement
+theorem binom_sum_range_shift {n : ℕ} (h: Odd n) :
+    ∑ k in image (fun x => Nat.choose n x) (Ico 1 ((n + 1) / 2)), k
+    = ∑ k in Ico 1 ((n + 1) / 2), Nat.choose n k := by
+  apply icc_ico n h ▸ binom_sum_range
+
 
 --------------------------------------------------------------------------------
 ---| MAIN THEOREM |-------------------------------------------------------------
