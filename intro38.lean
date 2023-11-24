@@ -1,5 +1,6 @@
 import Mathlib.Tactic
 import Mathlib.Combinatorics.SimpleGraph.Basic
+import Mathlib.Combinatorics.SimpleGraph.Subgraph
 import Mathlib.Data.Finset.Card
 
 open SimpleGraph
@@ -94,16 +95,6 @@ lemma card_sdiff_add_card_inter {α : Type u_1} [DecidableEq α] (s t : Finset �
     (s \ t).card + (s ∩ t).card = s.card := by
   rw [← card_disjoint_union (disjoint_sdiff_inter _ _), sdiff_union_inter]
 
-
-
--- lemma odd_sum_odd (X : Finset ℕ) (h : Odd X.card) (h' : ∀x∈X, Odd x)
---   : Odd $ ∑ x in X, x := by
---   unfold Odd at *
---   let (S : ℕ) := ∑ x in X, Classical.choose (h' x ?_)
---   . sorry
---   . sorry
---   done
-
 lemma one_leq_odd (x : ℕ) (h' : Odd x) : 1 ≤ x := by
     unfold Odd at h'
     cases' h' with r hr
@@ -146,45 +137,50 @@ lemma sum_odds (X : Finset ℕ) (h: Even X.card) (h': ∀ x ∈ X, Odd x)
   exact sum_le_sum h''
 
 def odd_elements (X : Finset ℕ) : Prop := ∀x∈X, Odd x
-#check Nat.twoStepInduction
 
 def sum_of_odd_prop (c : ℕ): Prop :=
   ∀(X : Finset ℕ), Odd c → X.card = c → odd_elements X → (Odd $ ∑ x in X, x)
 
-lemma odd_sum_odd
-  : ∀(c:ℕ), sum_of_odd_prop c := by
-  intro c
-  apply twoStepInduction _ _ _
-  . unfold sum_of_odd_prop
-    intro _ h
-    contradiction
-  . unfold sum_of_odd_prop
-    intro X _ h h'
-    rw [card_eq_one] at h
-    cases h with | intro y g =>
-    rw [g]
-    simp only [sum_singleton, h' y, g, mem_singleton]
-  . intro c h₀ h₁
-    unfold sum_of_odd_prop
-    intro X g g' g''
+def odd_set_card_odd_iff_sum_odd {V : Finset ℕ} (S : Finset V)
+  { f : V → ℕ } :=
+  (∀ x ∈ S, Odd $ f x) → (Odd (∑ s in S, f s) ↔ Odd S.card)
 
+theorem sum_odd_odd {V : Finset ℕ} {f : V → ℕ} :
+  ∀ (X: Finset V), @odd_set_card_odd_iff_sum_odd V X f := by
+  apply Finset.induction
+  . intro _
+    rfl
+  . intro x X h h' ha
+    rw [sum_insert h, card_insert_of_not_mem h, odd_add, odd_add']
+    have : Odd (f x) := (ha x) (mem_insert_self x X)
+    simp only [true_iff, this]
+    rw [← not_iff_not]
+    repeat rw [← odd_iff_not_even]
+    apply h'
+    intro x hx
+    exact (ha x) (mem_insert_of_mem hx)
+  done
 
-
+lemma inter_sdiff_empty_eq { A B C : Finset ℕ }
+  (h : A ∩ (C \ B) = ∅ ) (h2 : B ⊆ C): A ∩ B = A ∩ C := by
+  rw [← union_sdiff_of_subset h2, inter_distrib_left]
+  simp only [h, union_empty]
   done
 
 --------------------------------------------------------------------------------
 ---| MAIN THEOREM |-------------------------------------------------------------
 --------------------------------------------------------------------------------
+variable (V : Finset ℕ)
+variable (G : SimpleGraph V)
+variable (H : Subgraph G)
 
-theorem intro38 {V : Finset ℕ } (n : ℕ) (G : SimpleGraph V) [DecidableRel G.Adj]
-  [nei: Nonempty V] (hdeg : ∀ (v : V), Even (G.degree v) ) (c : V.card = 2 * n)
+theorem intro38(n : ℕ) [DecidableRel G.Adj] [nei: Nonempty V]
+  (hdeg : ∀ (v : V), Even (G.degree v) ) (c : V.card = 2 * n)
   : ∃(a b : V), Even (card (G.neighborFinset a ∩ G.neighborFinset b)) := by
   by_contra g
   push_neg at g
 
   -- A := N(p)
-  -- ???
-
   let closed_nh_comp := λ v ↦ V.attach \ closed_neighborFinset G v
 
   -- We have an even number of vertices
@@ -251,9 +247,20 @@ theorem intro38 {V : Finset ℕ } (n : ℕ) (G : SimpleGraph V) [DecidableRel G.
 
   -- deg_A(q) is odd
   have h₄ : ∀(p q : V), q ∈ closed_nh_comp p
-    → Odd (card (G.neighborFinset q ∩ closed_neighborFinset G p))  := by
+    → Odd (card (G.neighborFinset q ∩ neighborFinset G p))  := by
+    exact fun p q _ ↦ (fun {n} ↦ odd_iff_not_even.mpr) (g q p)
+    done
+  -- ???
+
+
+  have h₅ : ∀(p q : V), q ∈ closed_nh_comp p
+    → Odd (card (G.neighborFinset q ∩ closed_neighborFinset G p)) := by
+    intro p q h
+    have temp : G.neighborFinset q ∩ (closed_neighborFinset G p \ {p}) = ∅ := by
+      sorry
+      done
+    --apply inter_sdiff_empty_eq.symm ?_
     sorry
-    -- exact fun p q _ ↦ (fun {n} ↦ odd_iff_not_even.mpr) (g q p)
     done
 
   --
@@ -272,13 +279,13 @@ theorem intro38 {V : Finset ℕ } (n : ℕ) (G : SimpleGraph V) [DecidableRel G.
   have part_V_by_nh
     : ∀ (p : V), V.attach = closed_nh_comp p ∪ closed_neighborFinset G p := by
     simp only [sdiff_union_self_eq_union, left_eq_union]
-    aesop_graph
+    sorry --aesop_graph
     done
 
   have inter_eq_sdiff_comp_nh : ∀ (p q : V),
     neighborFinset G q \ closed_nh_comp p
     = neighborFinset G q ∩ closed_neighborFinset G p := by
-    aesop_graph
+    sorry --aesop_graph
     done
 
   -- example {α : Type u_1} [DecidableEq α] (s : Finset α) (t : Finset α) :
@@ -298,18 +305,23 @@ theorem intro38 {V : Finset ℕ } (n : ℕ) (G : SimpleGraph V) [DecidableRel G.
       . rw [card_sdiff_add_card_inter]
         exact Nat.le_refl _
     . rw [inter_eq_sdiff_comp_nh]
-      exact h₄ p q h
+      exact h₅ p q h
     done
 
   -- The sum of the degrees of elements in B is odd
   have sum_of_B_elem_deg_odd : ∀(p : V), Odd (∑ q in closed_nh_comp p,
     (card (G.neighborFinset q ∩ closed_nh_comp p))) := by
-    simp only [odd_iff_not_even, Subtype.forall]
-    intro a b
-    rw [← odd_iff_not_even]
-
+    intro p
+    rw [sum_odd_odd $ closed_nh_comp p]
+    . exact V_take_closed_nh_odd p
+    . intro q h
+      exact degree_in_B_odd p q h
     done
 
-
+  have sum_of_B_elem_deg_even : ∀(p : V),
+    ¬Odd (∑ q in closed_nh_comp p, (card (G.neighborFinset q ∩ closed_nh_comp p))) := by
+    intro p
+    sorry
+    done
 
   done
