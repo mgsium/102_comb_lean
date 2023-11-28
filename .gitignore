@@ -1,1 +1,5 @@
 *.olean
+build/*
+lakefile.*
+lake-manifest.json
+lake-packages/*
