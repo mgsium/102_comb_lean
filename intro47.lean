@@ -1,4 +1,6 @@
 import Mathlib.Tactic
+import Mathlib.Data.ZMod.Parity
+import Common
 
 /-!
 
@@ -17,8 +19,8 @@ instance instFintypeChessboard : Fintype chessboard :=
 
 -- Standard chessboard coloring, starting with white
 -- in the top left corner
-def standard_coloring : chessboard → ZMod 2 :=
-  fun ⟨x, y⟩ ↦ x.val + y.val
+def standard_coloring (sq : chessboard) : ZMod 2 :=
+  sq.1.val + sq.2.val
 def white_square (sq : chessboard) : Bool :=
   standard_coloring sq = 0
 
@@ -36,8 +38,33 @@ def odd_column (f : numbering) (col : Fin 2002) : Prop :=
 def all_row_col_odd (f : numbering) : Prop :=
   (∀ (row : Fin 1998), odd_row f row) ∧ (∀ (col : Fin 2002), odd_column f col)
 
+def Rₒ (f : numbering) := ∑ i in Finset.Icc 1 999, ∑ j in Finset.univ, f ⟨i, j⟩
+def Cₑ (f : numbering) := ∑ j in Finset.Icc 1 1001, ∑ i in Finset.univ, f ⟨i, j⟩
 
-theorem intro47 (f : numbering) { h : all_row_col_odd f }
-  : Even (∑ sq in Finset.univ, f sq) := by
+variable (f : numbering)
+variable (h : all_row_col_odd f)
+
+-- A square (i, j) is white iff i and j have the same parity
+def white_iff_parity_eq (sq : chessboard)
+  : white_square sq ↔ (Odd (sq.1 : ℕ) ↔ Odd (sq.2 : ℕ)) := by
+  unfold white_square standard_coloring
+  simp only [decide_eq_true_eq, ← Nat.even_add']
+  suffices
+    : ((sq.1 + sq.2 : ℕ) : ZMod 2) = 0  ↔ (sq.1 + sq.2 : ZMod 2) = 0
+  . rw [← this, ZMod.eq_zero_iff_even]
+  . simp only [Nat.cast_add]
+  done
+
+-- Sum of odd rows is odd
+lemma odd_rows_sum_odd : Odd (Rₒ f) := by
+  sorry
+  done
+
+-- Sum of even columns is odd
+lemma even_cols_summ_odd : Odd (Cₑ f) := by
+  sorry
+  done
+
+theorem intro47 : Even (∑ sq in Finset.univ, f sq) := by
   sorry
   done
