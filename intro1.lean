@@ -50,7 +50,7 @@ def monograms : Finset (Alphabet × Alphabet) :=
 def monos_with (x : Alphabet) : Finset (Alphabet × Alphabet) :=
   @filter _ (fun p ↦ ordered p.1 p.2 ∧ p.1 = x) (fun _ ↦ And.decidable) univ
 
--- all letters which follow some fixed letter `x` in the alphabet, expect 'z'
+-- all letters which follow some fixed letter `x` in the alphabet, except 'z'
 def ord_from (x : Alphabet) : Finset Alphabet :=
   filter (ordered x ·) univ
 
@@ -64,8 +64,8 @@ end setup
 --------------------------------------------------------------------------------
 section useful_lemmas
 
--- For any two distinct letters `l1` and `l2`, `monos_with l1` is disjoint
--- from `mono_with l2`
+-- For any two distinct letters `L₁` and `L₂`, `monos_with L₁` is disjoint
+-- from `mono_with L₂`
 lemma monos_disjoint : Set.PairwiseDisjoint univ.toSet monos_with := by
   unfold Set.PairwiseDisjoint Set.Pairwise onFun monos_with
   simp_rw [disjoint_left]
@@ -82,7 +82,7 @@ lemma union_monos_with_eq_monograms
   : disjiUnion univ monos_with monos_disjoint = monograms := by
   ext; simp [monograms, monos_with, uncurry_def]
 
--- If a pair `p` is in `minos_with x`, the first element of `p` must equal `x`
+-- If a pair `p` is in `monos_with x`, the first element of `p` must equal `x`
 lemma mono_first (a : Alphabet) (p : Alphabet × Alphabet)
   : p ∈ monos_with a → p.1 = a := by
   unfold monos_with
@@ -91,7 +91,7 @@ lemma mono_first (a : Alphabet) (p : Alphabet × Alphabet)
   exact fun h ↦ h.2
   done
 
--- the set of values of letters in `ord_from a` is equal to the open interval
+-- The set of values of letters in `ord_from a` is equal to the open interval
 -- from `a` to 25 for any fixed letter `a`.
 lemma ord_from_eq_Ioo (a : Alphabet)
   : image (fun x ↦ x.val) (ord_from a) = Ioo a.val 25 := by
