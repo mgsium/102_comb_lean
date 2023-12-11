@@ -24,30 +24,35 @@ open Nat Finset Function Fin
 section setup
 
 def Alphabet : Type := Fin 26
-instance instFintypeAlphabet : Fintype Alphabet := fintype 26
-instance instDecidableEqAlphabet : DecidableEq Alphabet := instDecidableEqFin 26
-instance instLTAlphabet : LT Alphabet := instLTFin
-instance instFintypeAlphabetProd : Fintype (Alphabet × Alphabet) :=
+
+instance : Fintype Alphabet :=
+  fintype 26
+instance : DecidableEq Alphabet :=
+  instDecidableEqFin 26
+instance : LT Alphabet :=
+  instLTFin
+instance : Fintype (Alphabet × Alphabet) :=
   instFintypeProd Alphabet Alphabet
 
-def ordered (a b : Alphabet) : Prop := a < b ∧ b.val < 25
-instance decOrderedRel : DecidableRel ordered := by
-  unfold ordered
-  exact fun _ _ ↦ And.decidable
-  done
+def ordered (a b : Alphabet) : Prop :=
+  a < b ∧ b.val < 25
+instance decOrderedRel : DecidableRel ordered :=
+  fun _ _ ↦ And.decidable
 
 instance decOrdered : DecidablePred (uncurry ordered) :=
   fun _ ↦ instDecidableUncurryProp
 
+-- all ordered alphabet pairs
 def monograms : Finset (Alphabet × Alphabet) :=
   filter (uncurry ordered) univ
 
-def monos_with (a : Alphabet) : Finset (Alphabet × Alphabet) :=
-  @filter _ (fun (p : Alphabet × Alphabet) ↦ ordered p.1 p.2 ∧ p.1 = a)
-  (fun _ ↦ And.decidable) univ
+-- all ordered alphabet pairs with a fixed first element
+def monos_with (x : Alphabet) : Finset (Alphabet × Alphabet) :=
+  @filter _ (fun p ↦ ordered p.1 p.2 ∧ p.1 = x) (fun _ ↦ And.decidable) univ
 
-def a_to_25 (a : Alphabet) : Finset Alphabet :=
-  filter (fun b ↦ ordered a b) univ
+-- all letters which follow some fixed letter `x` in the alphabet, expect 'z'
+def ord_from (x : Alphabet) : Finset Alphabet :=
+  filter (ordered x ·) univ
 
 -- monos_with a → a_to_25
 def monos_to_interval (a : Alphabet) (p : Alphabet × Alphabet)
@@ -59,6 +64,8 @@ end setup
 --------------------------------------------------------------------------------
 section useful_lemmas
 
+-- For any two distinct letters `l1` and `l2`, `monos_with l1` is disjoint
+-- from `mono_with l2`
 lemma monos_disjoint : Set.PairwiseDisjoint univ.toSet monos_with := by
   unfold Set.PairwiseDisjoint Set.Pairwise onFun monos_with
   simp_rw [disjoint_left]
@@ -69,12 +76,13 @@ lemma monos_disjoint : Set.PairwiseDisjoint univ.toSet monos_with := by
   exact Eq.trans_ne ha.2 g
   done
 
-lemma union_monos_with_eq_monograms : disjiUnion univ monos_with monos_disjoint = monograms := by
-  ext x
-  unfold monograms monos_with
-  simp [uncurry_def]
-  done
+-- The disjoint union of all the `monos_with` finsets indexed over the univeral
+-- set of letters (i.e. values of type `Alphabet`) is equal to the set of monograms
+lemma union_monos_with_eq_monograms
+  : disjiUnion univ monos_with monos_disjoint = monograms := by
+  ext; simp [monograms, monos_with, uncurry_def]
 
+-- If a pair `p` is in `minos_with x`, the first element of `p` must equal `x`
 lemma mono_first (a : Alphabet) (p : Alphabet × Alphabet)
   : p ∈ monos_with a → p.1 = a := by
   unfold monos_with
@@ -83,51 +91,47 @@ lemma mono_first (a : Alphabet) (p : Alphabet × Alphabet)
   exact fun h ↦ h.2
   done
 
-lemma a_to_25_is_Ioo (a : Alphabet)
-  : image (fun x ↦ x.val) (a_to_25 a) = Ioo a.val 25 := by
+-- the set of values of letters in `ord_from a` is equal to the open interval
+-- from `a` to 25 for any fixed letter `a`.
+lemma ord_from_eq_Ioo (a : Alphabet)
+  : image (fun x ↦ x.val) (ord_from a) = Ioo a.val 25 := by
   ext b
   simp only [mem_image, gt_iff_lt, is_lt, not_true, ge_iff_le, mem_Ioo]
-  unfold a_to_25
+  unfold ord_from
   simp_rw [mem_filter, mem_univ, true_and]
   unfold ordered
   constructor <;> intro h
   . let ⟨_, ⟨g, g'⟩⟩ := h
-    rw [← g']
-    simp only [val_fin_lt]
+    rw [← g', val_fin_lt]
     exact g
-  . use ofNat'' b --(pos a)
+  . use ofNat'' b
     simp only [ofNat_eq_val, coe_ofNat_eq_mod, mod_succ_eq_iff_lt]
-    refine ⟨⟨?_, lt_of_le_of_lt (mod_le b 26) h.2⟩, (by linarith)⟩
     rw [lt_iff_val_lt_val, val_cast_of_lt (by linarith)]
-    exact h.1
+    simp only [lt_of_le_of_lt (mod_le b 26) h.2, h, lt.step h.2]
   done
 
+-- The cardinality of `monos_with a` is equal to 24 minus the value of `a`
 lemma monos_card (a : Alphabet) : card (monos_with a) = 24 - a.val := by
-  rw [@card_congr _ _ (monos_with a) (a_to_25 a) (monos_to_interval a)]
-  . rw [← @card_image_of_injective _ _ (fun x ↦ x.val) _ _ (by simp)]
-    rw [a_to_25_is_Ioo a]
+  rw [@card_congr _ _ (monos_with a) (ord_from a) (monos_to_interval a)]
+  . rw [← @card_image_of_injective _ _ (fun x ↦ x.val) _ _ (by decide)]
+    rw [ord_from_eq_Ioo a]
     simp only [gt_iff_lt, not_lt, ge_iff_le, Nat.card_Ioo, tsub_le_iff_right]
     exact tsub_right_comm
   . intro p hp
-    unfold monos_to_interval a_to_25 monos_with at *
+    unfold monos_to_interval ord_from
+    unfold monos_with at hp
     rw [mem_filter] at *
     simp_rw [mem_univ, true_and] at *
     rw [← hp.2]
     exact hp.1
   . intro p q hp hq h
-    unfold monos_to_interval at h
-    ext
-    . rw [mono_first a p hp, mono_first a q hq]
-    . exact h
+    apply Prod.ext _ h
+    rw [mono_first a p hp, mono_first a q hq]
   . intro b h
-    use (a,b), ?_
-    . simp [monos_to_interval]
-    . unfold monos_with
-      rw [mem_filter]
-      simp_rw [mem_univ, true_and, and_true]
-      unfold a_to_25 at h
-      simp only [mem_univ, forall_true_left, mem_filter, true_and] at h
-      exact h
+    unfold monos_with monos_to_interval
+    simp_rw [ord_from, mem_filter, mem_univ, true_and] at h
+    use (a, b)
+    simp [h]
   done
 
 end useful_lemmas
