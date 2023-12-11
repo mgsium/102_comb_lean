@@ -6,6 +6,8 @@ open Finset
 
 universe u
 
+---| Working with Finsets |-----------------------------------------------------
+
 -- in a finset of odd elements, parity of cardinality equals parity of sum
 theorem sum_even_even { α : Type u } [DecidableEq α] (X: Finset α) { f : α → ℕ }
   : (∀ x ∈ X, Odd (f x)) → (Even (∑ s in X, f s) ↔ Even X.card) := by
@@ -59,3 +61,19 @@ theorem sum_odd_odd' (s : Finset ℕ) :
     apply Even.add (filter_odd_sum.mp h) (filter_even_sum s)
   . rw [odd_filter]
     apply Odd.add_even (filter_odd_sum'.mp h) (filter_even_sum s)
+
+lemma mem_filter_univ {α : Type*} [Fintype α] {p : α → Prop} [DecidablePred p]
+  {x : α} : x ∈ filter p univ ↔ p x := by
+    simp only [Finset.mem_univ, forall_true_left, mem_filter, true_and]
+
+---| ZMod 2 Parity |------------------------------------------------------------
+
+lemma zmod2_eq_iff { a : ZMod 2 } : a = 1 ↔ ¬a = 0 := by
+  cases' a with a ha
+  interval_cases a <;> simp
+
+lemma zmod2_parity_iff { a : ZMod 2 } : Even a ↔ a = 0 := by
+  simp [even_iff_exists_bit0]
+
+lemma zmod2_parity_iff' { a : ZMod 2 } : Odd a ↔ a = 1 := by
+  simp [odd_iff_exists_bit1]
