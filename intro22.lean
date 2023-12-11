@@ -17,12 +17,52 @@ number of pairs is ((3ⁿ - 1)/2) + 1.
 
 -/
 
-open Nat Finset Function
+open Finset Function
 
 --------------------------------------------------------------------------------
 ---| SETUP |--------------------------------------------------------------------
 --------------------------------------------------------------------------------
 section setup
+
+def swapProp (X Y : Finset ℕ × Finset ℕ) : Prop := X = Y ∨ X = Prod.swap Y
+
+lemma swapProp_refl : Reflexive (swapProp) := by
+  unfold swapProp
+  intro X
+  exact Or.inl rfl
+  done
+
+lemma swapProp_symm : Symmetric (swapProp) := by
+  unfold swapProp
+  intro X Y h
+  by_cases h' : X = Y
+  . exact Or.inl h'.symm
+  . simp_rw [h'] at h
+    simp only [false_or] at h
+    exact Or.inr $ Prod.swap_inj.mp h.symm
+  done
+
+lemma swapProp_trans : Transitive (swapProp) := by
+  unfold swapProp
+  intro X Y Z h h'
+  by_cases hxy : X = Y
+  . rw [← hxy] at h'
+    exact h'
+  . simp_rw [hxy, false_or] at h
+    apply_fun Prod.swap at h
+    simp only [Prod.swap_swap] at h
+    rw [← h] at h'
+    simp only [Prod.swap_inj] at h'
+    by_cases hxz : X = Z
+    . exact Or.inl hxz
+    . simp_rw [hxz, or_false] at h'
+      apply_fun Prod.swap at h'
+      simp only [Prod.swap_swap] at h'
+      exact Or.inr h'
+  done
+
+theorem swapEquiv : Equivalence swapProp :=
+  ⟨swapProp_refl, @swapProp_symm, @swapProp_trans⟩
 
 -- (ha : A ⊆ S) (hb : B ⊆ S)
 def union_prop (A B S : Finset ℕ) : Prop := A ∪ B = S
@@ -34,8 +74,11 @@ instance decUnion_prop (S : Finset ℕ) : DecidablePred (uncurry union_prop · S
   exact decEq (A ∪ B) S
   done
 
-def subset_pairs (S : Finset ℕ) : (Finset (Finset ℕ × Finset ℕ)) :=
+def subset_pairs (S : Finset ℕ) : (Finset $ Finset ℕ × Finset ℕ) :=
   filter (uncurry union_prop · S) (Finset.product (Finset.powerset S) (Finset.powerset S))
+
+def subset_quot := Quotient { r := swapProp, iseqv := swapEquiv}
+
 
 end setup
 --------------------------------------------------------------------------------
@@ -43,16 +86,21 @@ end setup
 --------------------------------------------------------------------------------
 section useful_lemmas
 
+#eval subset_pairs {1,2}
 
 end useful_lemmas
 --------------------------------------------------------------------------------
 ---| MAIN THEOREM |-------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-theorem intro22 : card (subset_pairs {1,2,3,4,5,6}) = 365 := by
+theorem test : card (subset_pairs {1,2}) = 9 := by
+  decide
+  done
+
+theorem intro22 : card (subset_pairs $ Finset.Icc 1 6) = 324 := by
   sorry
   done
 
-theorem intro22generalised (n : ℕ) : card (subset_pairs $ Finset.Icc 1 n) = (3^n - 1) / 2 + 1 := by
+theorem intro22generalisation (n : ℕ) : card (subset_pairs $ Finset.Icc 1 n) = (3^n - 1) / 2 + 1 := by
   sorry
   done
