@@ -24,6 +24,58 @@ open Finset Function
 --------------------------------------------------------------------------------
 section setup
 
+
+-- universe u
+-- variable {α : Type u}
+
+-- def swapProp {α : Type u} (X Y : α × α) : Prop := X = Y ∨ X = Prod.swap Y
+-- notation:50 lhs:51 " ~ " rhs:51 => swapProp lhs rhs
+
+-- lemma swap.refl : Reflexive (@swapProp α) := by
+--   unfold swapProp
+--   intro X
+--   exact Or.inl rfl
+--   done
+
+-- lemma swap.symm : Symmetric (@swapProp α) := by
+--   unfold swapProp
+--   intro X Y h
+--   by_cases h' : X = Y
+--   . exact Or.inl h'.symm
+--   . simp_rw [h'] at h
+--     simp only [false_or] at h
+--     exact Or.inr $ Prod.swap_inj.mp h.symm
+--   done
+
+-- lemma swap.trans : Transitive (@swapProp α) := by
+--   unfold swapProp
+--   intro X Y Z hxy hyz
+--   cases' hxy with a ha
+--   cases' hyz with b hb
+--   . exact Or.inl $ Eq.trans a b
+--   . rw [← a] at hb
+--     exact Or.inr hb
+--   . cases' hyz with c hc
+--     . rw [c] at ha
+--       exact Or.inr ha
+--     . apply_fun Prod.swap at hc
+--       simp_rw [Prod.swap_swap] at hc
+--       exact Or.inl $ Eq.trans ha hc
+--   done
+
+-- theorem swapEquiv : Equivalence $ @swapProp α :=
+--   ⟨swapProp.refl, swapProp.symm, swapProp.trans⟩
+
+-- (ha : A ⊆ S) (hb : B ⊆ S)
+def union_prop (A B S : Finset ℕ) : Prop := A ∪ B = S
+
+instance decUnion_prop (S : Finset ℕ) : DecidablePred (uncurry union_prop · S) := by
+  unfold uncurry union_prop
+  intro ⟨A,B⟩
+  simp only
+  exact decEq (A ∪ B) S
+  done
+
 def swapProp (X Y : Finset ℕ × Finset ℕ) : Prop := X = Y ∨ X = Prod.swap Y
 
 lemma swapProp_refl : Reflexive (swapProp) := by
@@ -44,40 +96,59 @@ lemma swapProp_symm : Symmetric (swapProp) := by
 
 lemma swapProp_trans : Transitive (swapProp) := by
   unfold swapProp
-  intro X Y Z h h'
-  by_cases hxy : X = Y
-  . rw [← hxy] at h'
-    exact h'
-  . simp_rw [hxy, false_or] at h
-    apply_fun Prod.swap at h
-    simp only [Prod.swap_swap] at h
-    rw [← h] at h'
-    simp only [Prod.swap_inj] at h'
-    by_cases hxz : X = Z
-    . exact Or.inl hxz
-    . simp_rw [hxz, or_false] at h'
-      apply_fun Prod.swap at h'
-      simp only [Prod.swap_swap] at h'
-      exact Or.inr h'
+  intro X Y Z hxy hyz
+  cases' hxy with a ha
+  cases' hyz with b hb
+  . exact Or.inl $ Eq.trans a b
+  . rw [← a] at hb
+    exact Or.inr hb
+  . cases' hyz with c hc
+    . rw [c] at ha
+      exact Or.inr ha
+    . apply_fun Prod.swap at hc
+      simp_rw [Prod.swap_swap] at hc
+      exact Or.inl $ Eq.trans ha hc
   done
 
 theorem swapEquiv : Equivalence swapProp :=
   ⟨swapProp_refl, @swapProp_symm, @swapProp_trans⟩
 
--- (ha : A ⊆ S) (hb : B ⊆ S)
-def union_prop (A B S : Finset ℕ) : Prop := A ∪ B = S
+def subsetSetoid : Setoid $ Finset ℕ × Finset ℕ :=
+  { r := swapProp, iseqv := swapEquiv}
 
-instance decUnion_prop (S : Finset ℕ) : DecidablePred (uncurry union_prop · S) := by
-  unfold uncurry union_prop
+instance instSubsetSetoid : Setoid $ Finset ℕ × Finset ℕ :=
+  { r := swapProp, iseqv := swapEquiv}
+
+def unordered : Type := Quotient instSubsetSetoid
+
+def upair (a b : Finset ℕ) : unordered := Quotient.mk' (a, b)
+notation "|" a "," b "|" => upair a b
+
+lemma swap_eq (a b : Finset ℕ) : |a, b| = |b, a| := by
+  refine Quot.sound ?_
+  unfold Setoid.r
+  unfold instSubsetSetoid
+  simp only
+  unfold swapProp
+  right
+  trivial
+
+def subset_dup (S : Finset ℕ) : (Finset $ Finset ℕ × Finset ℕ) :=
+  filter (uncurry union_prop · S) (Finset.product (Finset.powerset S) (Finset.powerset S))
+
+def upair_union_prop (A B S : Finset ℕ) : Prop := A ∪ B = S
+
+instance decUpair_Union_prop (S : Finset ℕ) : DecidablePred (uncurry upair_union_prop · S) := by
+  unfold uncurry upair_union_prop
   intro ⟨A,B⟩
   simp only
   exact decEq (A ∪ B) S
   done
 
-def subset_pairs (S : Finset ℕ) : (Finset $ Finset ℕ × Finset ℕ) :=
-  filter (uncurry union_prop · S) (Finset.product (Finset.powerset S) (Finset.powerset S))
 
-def subset_quot := Quotient { r := swapProp, iseqv := swapEquiv}
+def subset_upairs (S : Finset ℕ) : Finset unordered :=
+  filter (uncurry union_prop · S) (upair (Finset.powerset S) (Finset.powerset S))
+
 
 
 end setup
@@ -86,21 +157,33 @@ end setup
 --------------------------------------------------------------------------------
 section useful_lemmas
 
-#eval subset_pairs {1,2}
-
 end useful_lemmas
 --------------------------------------------------------------------------------
 ---| MAIN THEOREM |-------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-theorem test : card (subset_pairs {1,2}) = 9 := by
-  decide
-  done
+set_option maxRecDepth 8000
 
-theorem intro22 : card (subset_pairs $ Finset.Icc 1 6) = 324 := by
-  sorry
-  done
+-- theorem test : card (subset_pairs {1,2}) = 9 := by
+--   decide
+--   done
 
-theorem intro22generalisation (n : ℕ) : card (subset_pairs $ Finset.Icc 1 n) = (3^n - 1) / 2 + 1 := by
-  sorry
-  done
+-- theorem test2 : card (subset_pairs {1,2,3}) = 27 := by
+--   decide
+--   done
+
+-- theorem test3 : card (subset_pairs {1,2,3,4}) = 81 := by
+--   decide
+--   done
+
+-- theorem test4 : card (subset_pairs {1,2,3,4,5}) = 243 := by
+--   decide
+--   done
+
+-- theorem intro22 : card (subset_pairs $ Finset.Icc 1 6) = 729 := by
+--   decide
+--   done
+
+-- theorem intro22generalisation (n : ℕ) : card (subset_pairs $ Finset.Icc 1 n) = (3^n - 1) / 2 + 1 := by
+--   sorry
+--   done
