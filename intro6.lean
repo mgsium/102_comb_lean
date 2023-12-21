@@ -4,7 +4,6 @@ import Mathlib.Combinatorics.SimpleGraph.DegreeSum
 import Mathlib.Data.Nat.Prime
 import Mathlib.Data.Nat.Parity
 import Mathlib.Data.Nat.Order.Basic
-import Mathlib.Data.Setoid.Partition
 import Mathlib.Order.Partition.Finpartition
 
 open Finset Nat
@@ -15,8 +14,17 @@ Twenty five boys and twenty five girls sit around a table. Prove that it is
 always possible to find a person both of whose neighbors are girls.
 
 ## Solution
-...
+Using a variant of solution 2 given in the text, we represent the 50 children
+as a graph on 50 vertices, where two children are connected if there is
+exactly one other child sitting between them. It is easy to see that this is
+the graph G = C_25 + C_25. A seating arrangment where no two girls are connected
+corresponds to an independent set of size 25 in the this graph. But the
+independence number of C_25 + C_25 is ≤ 24, so no such arrangement exists.
 -/
+
+--------------------------------------------------------------------------------
+---| SETUP : GRAPH UNION |------------------------------------------------------
+--------------------------------------------------------------------------------
 
 variable {α : Type*} [Fintype α] [DecidableEq α] (G : SimpleGraph α)
 variable [instDecidableGAdj : DecidableRel G.Adj]
@@ -24,29 +32,29 @@ variable [instDecidableGAdj : DecidableRel G.Adj]
 variable {β : Type*} [Fintype β] [DecidableEq β] (H : SimpleGraph β)
 variable [instDecidableHAdj : DecidableRel H.Adj]
 
+-- Define the union of two simple graphs
 def union : SimpleGraph (α ⊕ β) := SimpleGraph.fromRel rel
   where rel (u v : α ⊕ β) :=
         if h : u.isLeft ∧ v.isLeft then G.Adj (u.getLeft h.1) (v.getLeft h.2)
         else if h : u.isRight ∧ v.isRight then H.Adj (u.getRight h.1) (v.getRight h.2)
         else false
 
-def prod : SimpleGraph (α ⊕ β) := SimpleGraph.fromRel rel
-  where rel (u v : α ⊕ β) :=
-        if h : u.isLeft ∧ v.isLeft then G.Adj (u.getLeft h.1) (v.getLeft h.2)
-        else if h : u.isRight ∧ v.isRight then H.Adj (u.getRight h.1) (v.getRight h.2)
-        else true
-
+-- The adjacency relation of a graph G + H is decidable if G.Adj and H.Adj
+-- are each decidable
 instance instDecidableUnionRel {a b : α ⊕ β} : Decidable (union.rel G H a b) :=
   instDecidableDitePropNot
 
-instance instDecidableRelUnionRel : DecidableRel (union.rel G H) :=
-  fun _ _ ↦ instDecidableUnionRel G H
+instance : DecidableRel (union G H).Adj := by
+    unfold union SimpleGraph.fromRel
+    intro a b
+    simp only [ne_eq]
+    refine @And.decidable _ _ _ ?_
+    refine @Or.decidable _ _ ?_ ?_
+    <;> exact instDecidableUnionRel G H
 
-instance instDecidableRelUnionAdj : DecidableRel (union G H).Adj := by
-  unfold union SimpleGraph.fromRel
-  intro a b
-  simp only [ne_eq]
-  apply And.decidable
+--------------------------------------------------------------------------------
+---| SETUP : INDEPENDENT SETS |-------------------------------------------------
+--------------------------------------------------------------------------------
 
 @[simp]
 abbrev isIndSet (k : ℕ) (S : Finset α) : Prop :=
@@ -57,34 +65,17 @@ def hasIndSet (k : ℕ) : Prop :=
 
 abbrev indSets := filter (fun x => isIndSet G x.card x) univ
 
+-- The size of a maximum independent set in a graph
 def independenceNumber : ℕ := sup (indSets G) card
 
+-- The empty set is always an independent set
 lemma instNonemptyIndSets : Finset.Nonempty (indSets G) := by
   use ∅ ; simp
 
-instance : DecidableRel (union G H).Adj := by
-    unfold union SimpleGraph.fromRel
-    intro a b
-    simp only [ne_eq]
-    refine @And.decidable _ _ _ ?_
-    refine @Or.decidable _ _ ?_ ?_
-    <;> exact instDecidableUnionRel G H
-    done
-
-lemma getLeft?_inj (a a' : α ⊕ β) (b : α) (h : b ∈ Sum.getLeft? a)
-  (h' : b ∈ Sum.getLeft? a') : a = a' := by
-  simp only [Option.mem_def, Sum.getLeft?_eq_some_iff] at h h'
-  rw [h, h']
-  done
-
-lemma getRight?_inj (a a' : α ⊕ β) (b : β) (h : b ∈ Sum.getRight? a)
-  (h' : b ∈ Sum.getRight? a') : a = a' := by
-  simp only [Option.mem_def, Sum.getRight?_eq_some_iff] at h h'
-  rw [h, h']
-  done
-
-lemma sum_iset_image_left (X : Finset (α ⊕ β)) (h : X ∈ indSets (union G H)):
-  filterMap Sum.getLeft? X getLeft?_inj ∈ indSets G := by
+-- An independent set in G + H restricted to its vertices in G
+-- is an independent set in G
+lemma sum_iset_image_left (X : Finset (α ⊕ β)) (h : X ∈ indSets (union G H))
+  : filterMap Sum.getLeft? X (by simp_all) ∈ indSets G := by
     simp only [isIndSet, le_refl, Subtype.forall, true_and, mem_univ,
       mem_filter, mem_filterMap, Sum.getLeft?_eq_some_iff, exists_eq_right]
     intro a ha b hb
@@ -97,8 +88,10 @@ lemma sum_iset_image_left (X : Finset (α ⊕ β)) (h : X ∈ indSets (union G H
     . tauto
     done
 
-lemma sum_iset_image_right (X : Finset (α ⊕ β)) (h : X ∈ indSets (union G H)):
-  filterMap Sum.getRight? X getRight?_inj ∈ indSets H := by
+-- An independent set in G + H restricted to its vertices in H
+-- is an independent set in H
+lemma sum_iset_image_right (X : Finset (α ⊕ β)) (h : X ∈ indSets (union G H))
+  : filterMap Sum.getRight? X (by simp_all) ∈ indSets H := by
     simp only [isIndSet, le_refl, Subtype.forall, true_and, mem_univ,
       mem_filter, mem_filterMap, Sum.getRight?_eq_some_iff, exists_eq_right]
     intro a ha b hb
@@ -112,21 +105,15 @@ lemma sum_iset_image_right (X : Finset (α ⊕ β)) (h : X ∈ indSets (union G 
     done
 
 lemma card_mapFilter_getLeft?_eq_filter_isLeft (X : Finset (α ⊕ β)) :
-  card (filter (Sum.isLeft ·) X) = card (filterMap Sum.getLeft? X getLeft?_inj) := by
-  apply card_congr (fun x hx => x.getLeft (mem_filter.mp hx).2)
-  . intro a ha ; simp [mem_of_mem_filter a ha]
-  . intro a ha ; simp
-  . simp
-  done
+  card (filter (Sum.isLeft ·) X) = card (filterMap Sum.getLeft? X (by simp_all)) := by
+  apply card_congr (fun x hx => x.getLeft (mem_filter.mp hx).2) <;> simp_all
 
 lemma card_mapFilter_getRight?_eq_filter_isRight (X : Finset (α ⊕ β)) :
-  card (filter (Sum.isRight ·) X) = card (filterMap Sum.getRight? X getRight?_inj) := by
-  apply card_congr (fun x hx => x.getRight (mem_filter.mp hx).2)
-  . intro a ha ; simp [mem_of_mem_filter a ha]
-  . intro a ha ; simp
-  . simp
-  done
+  card (filter (Sum.isRight ·) X) = card (filterMap Sum.getRight? X (by simp_all)) := by
+  apply card_congr (fun x hx => x.getRight (mem_filter.mp hx).2) <;> simp_all
 
+-- The independence number of a union is at most the sum of the separate
+-- independence numbers.
 lemma independence_number_add_le
   : independenceNumber (union G H) ≤ independenceNumber G + independenceNumber H := by
   unfold independenceNumber
@@ -143,21 +130,20 @@ lemma independence_number_add_le
     apply le_sup (sum_iset_image_right G H x h)
   done
 
+--------------------------------------------------------------------------------
+---| OTHER SETUP & INTERMEDIATE LEMMAS |----------------------------------------
+--------------------------------------------------------------------------------
+
+-- Definition of a cycle graph
 @[simp]
 def cycleGraph (n : ℕ) : SimpleGraph (ZMod n) := SimpleGraph.fromRel rel
   where rel (u v : ZMod n) := v = u + 1
 
-instance {n : ℕ} : DecidableRel (cycleGraph.rel n) := by
-  intro a b
-  simp only [cycleGraph.rel]
-  exact decEq _ _
-  done
+instance {n : ℕ} : DecidableRel (cycleGraph.rel n) := fun _ _ ↦ decEq _ _
+instance {n : ℕ} : DecidableRel (cycleGraph n).Adj := fun _ _ ↦ And.decidable
 
-instance : DecidableRel (cycleGraph 25).Adj := by
-  intro a b
-  simp only [cycleGraph, SimpleGraph.fromRel_adj, ne_eq]
-  exact And.decidable
-
+-- The neighborhood of a vertex v in a 25-cycle is the two-element
+-- set { v - 1, v + 1 }
 lemma cycle25_neighborFinset_eq {v : ZMod 25}
   : SimpleGraph.neighborFinset (cycleGraph 25) v = { v - 1, v + 1 } := by
   ext a
@@ -173,7 +159,7 @@ lemma cycle25_neighborFinset_eq {v : ZMod 25}
   simp only [self_eq_add_right] at h
   done
 
-
+-- A 25-cycle is a 2-regular graph
 lemma cycle25_deg_eq {v : ZMod 25}
   : SimpleGraph.degree (cycleGraph 25) v = 2 := by
   unfold SimpleGraph.degree
@@ -182,6 +168,7 @@ lemma cycle25_deg_eq {v : ZMod 25}
   ring_nf
   simp only [add_left_inj]
 
+-- The number of edges in a 25-cycle is 25
 lemma cycle25_edges
   : card (SimpleGraph.edgeFinset $ cycleGraph 25) = 25 := by
   suffices h : 2 * card (SimpleGraph.edgeFinset $ cycleGraph 25) = 50
@@ -194,9 +181,9 @@ lemma cycle25_edges
   done
 
 -- Counting argument :
--- > union of disjoint incidence sets in an  independent set can have
+-- * union of disjoint incidence sets in an  independent set can have
 --   cardinality at most 25 (the number of edges in the graph)
--- > ... but this has cardinality 26 (disjoint union of 13 terms, where
+-- * ... but this has cardinality 26 (disjoint union of 13 terms, where
 ---  each term is of cardinality 2)
 lemma indep_num_25cycle_le : independenceNumber (cycleGraph 25) ≤ 12 := by
   unfold independenceNumber
@@ -236,6 +223,10 @@ lemma indep_num_25cycle_le : independenceNumber (cycleGraph 25) ≤ 12 := by
   rw [cycle25_edges] at h
   exact le_lt_antisymm h h2
   done
+
+--------------------------------------------------------------------------------
+---| MAIN THEOREM |-------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 theorem intro6
   : independenceNumber (union (cycleGraph 25) (cycleGraph 25)) ≤ 24 := by
