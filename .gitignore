@@ -1,1 +1,3 @@
 *.olean
+build/*
+lake-packages/*

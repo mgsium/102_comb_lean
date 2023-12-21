@@ -23,16 +23,7 @@ open Nat Finset Function Fin
 --------------------------------------------------------------------------------
 section setup
 
-def Alphabet : Type := Fin 26
-
-instance : Fintype Alphabet :=
-  fintype 26
-instance : DecidableEq Alphabet :=
-  instDecidableEqFin 26
-instance : LT Alphabet :=
-  instLTFin
-instance : Fintype (Alphabet × Alphabet) :=
-  instFintypeProd Alphabet Alphabet
+abbrev Alphabet : Type := Fin 26
 
 def ordered (a b : Alphabet) : Prop :=
   a < b ∧ b.val < 25
