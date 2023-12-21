@@ -11,56 +11,52 @@ M(3) + M(4) - M(12) - M(15) - M(20) + M(60) = 801.
 -/
 open Finset Nat Function
 
+--------------------------------------------------------------------------------
+---| SETUP |--------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
 variable {n k : ℕ}
 
 -- f(x) = kx is injective for k > 0
 lemma mult_inj (hk : 0 < k): Injective (k * ·) := by
   intro x y h
   simp only [mul_eq_mul_left_iff, or_false] at h
-  exact (Or.elim h id (fun h' => (by linarith)))
+  exact Or.elim h id <| fun h' ↦ by linarith
 
 -- main theorem for counting multiples
 theorem num_div (hk : 0 < k) : card ((Icc 0 n).filter (k ∣ ·)) = n / k + 1 := by
   have h : (Icc 0 n).filter (k ∣ ·) = image (k * ·) (Icc 0 (n / k)) := by
     ext x
-    simp only [not_lt_zero', mem_Icc, _root_.zero_le, true_and, mem_filter, mem_image]
+    simp only [mem_filter, mem_Icc, mem_image, Nat.zero_le, true_and]
     constructor <;> intro h
     · use x / k, Nat.div_le_div_right h.left, Nat.mul_div_cancel' h.right
-    · rcases h with ⟨h₁, h₂, h₃⟩
-      refine ⟨?_, Dvd.intro h₁ h₃⟩
-      rwa [← h₃, mul_comm, ← Nat.le_div_iff_mul_le hk]
+    · let ⟨a, ha, ha'⟩ := h
+      rw [Nat.le_div_iff_mul_le hk] at ha
+      exact ⟨by linarith, Dvd.intro a ha'⟩
   rw [h, card_image_of_injective _ (mult_inj hk), card_Icc, Nat.sub_zero]
 
 -- define multiples of 3,4,5,12,15,20,60 in terms of sets
-def set3 : Finset ℕ := (Icc 0 2001).filter (3 ∣ ·)
-def set4 : Finset ℕ := (Icc 0 2001).filter (4 ∣ ·)
-def set5 : Finset ℕ := (Icc 0 2001).filter (5 ∣ ·)
-def set12 : Finset ℕ := (Icc 0 2001).filter (12 ∣ ·)
-def set15 : Finset ℕ := (Icc 0 2001).filter (15 ∣ ·)
-def set20 : Finset ℕ := (Icc 0 2001).filter (20 ∣ ·)
-def set60 : Finset ℕ := (Icc 0 2001).filter (60 ∣ ·)
+@[simp] abbrev mult  (n : ℕ) := (Icc 0 2001).filter (n ∣ ·)
+@[simp] abbrev mult' (n : ℕ) := (Icc 1 2001).filter (n ∣ ·)
 
--- counting numbers ≤ 2001 which are divisible by 3,4,5,12,15,20,60
-lemma num_div_3 : card set3 = 668 := by
-  rw [set3, num_div (by norm_num)] ; norm_num
+lemma mult_eq_insert_mult' {n : ℕ} : mult n = insert 0 (mult' n) := by
+  ext x
+  simp only [mem_insert, mem_Icc, Nat.zero_le, mem_filter]
+  rw [one_le_iff_ne_zero]
+  by_cases h' : x ≤ 0 <;> simp_all
 
-lemma num_div_4 : card set4 = 501 := by
-  rw [set4, num_div (by norm_num)] ; norm_num
+lemma mem_mult_iff {n m: ℕ} : m ∈ mult n ↔ n ∣ m ∧ m ≤ 2001  := by
+  unfold mult; rw [mem_filter, And.comm, mem_Icc]; norm_num
 
-lemma num_div_5 : card set5 = 401 := by
-  rw [set5, num_div (by norm_num)] ; norm_num
+lemma mul_dvd_iff {a b c: ℕ} {h : Coprime a b} : a ∣ c ∧ b ∣ c ↔ a * b ∣ c := by
+  constructor <;> intro g
+  . apply Coprime.mul_dvd_of_dvd_of_dvd h g.1 g.2
+  . exact ⟨dvd_of_mul_right_dvd g, dvd_of_mul_left_dvd g⟩
 
-lemma num_div_12 : card set12 = 167 := by
-  rw [set12, num_div (by norm_num)] ; norm_num
-
-lemma num_div_15 : card set15 = 134 := by
-  rw [set15, num_div (by norm_num)] ; norm_num
-
-lemma num_div_20 : card set20 = 101 := by
-  rw [set20, num_div (by norm_num)] ; norm_num
-
-lemma num_div_60 : card set60 = 34 := by
-  rw [set60, num_div (by norm_num)] ; norm_num
+lemma mult_mul {n m : ℕ} (h : Coprime n m) : mult n ∩ mult m = mult (n * m) := by
+  ext x
+  simp only [mem_inter, mem_mult_iff]
+  rw [← @mul_dvd_iff _ _ _ h]; tauto
 
 -- this exists in mathlib in a newer version
 lemma card_sdiff_add_card_inter (s t : Finset ℕ) :
@@ -68,131 +64,60 @@ lemma card_sdiff_add_card_inter (s t : Finset ℕ) :
   rw [← card_disjoint_union (disjoint_sdiff_inter _ _), sdiff_union_inter]
 
 -- apply inclusion-exclusion twice for a set theoretical identity needed for counting
--- this proof should really be written using calc
 theorem card_union_diff (s t r : Finset ℕ) : card ((s ∪ t) \ r) +
    card (s ∩ r) + card (t ∩ r) = card (s ∪ t) + card (s ∩ t ∩ r) := by
-  have h : card ((s ∪ t) \ r) + card (s ∩ r ∪ t ∩ r) = card (s ∪ t)  := by
-    have h' : s ∩ r ∪ t ∩ r = (s ∪ t) ∩ r := (inter_distrib_right s t r).symm
-    rw [h'] ; apply card_sdiff_add_card_inter
-  rw [← h]
-  have h'': (s ∩ r) ∩ (t ∩ r) = s ∩ t ∩ r := by
-    ext bob ; simp only [mem_inter, mem_union, mem_sdiff] ; tauto
-  have h' : card (s ∩ r) + card (t ∩ r)
-      = card (s ∩ r ∪ t ∩ r) + card (s ∩ t ∩ r) := by
-    rw [← h'', card_union_add_card_inter]
+  have h : (s ∩ r) ∩ (t ∩ r) = s ∩ t ∩ r := by ext; simp_all
+  rw [← h, add_assoc, ← card_union_add_card_inter (s ∩ r) (t ∩ r)]
+  rw [← add_assoc, add_comm, ← inter_distrib_right s t r]
+  rw [card_sdiff_add_card_inter]
   linarith
 
 -- nat subtraction version of the previous theorem
 theorem card_union_diff' (s t r : Finset ℕ) : card ((s ∪ t) \ r)
-    = card (s ∪ t) + card (s ∩ t ∩ r)  - card (t ∩ r) - card (s ∩ r):= by
-  have h {a b c d e : ℕ}(h: a + b + c = d + e): a = d + e - c - b := by
-    rw [← h] ; norm_num
-  exact h (card_union_diff s t r)
+    = card (s ∪ t) + card (s ∩ t ∩ r) - card (t ∩ r) - card (s ∩ r):= by
+  rw [← card_union_diff s t r]; simp
 
 -- nat subtraction version card of union
-theorem card_union_add_card_inter' (s t : Finset ℕ) : card (s ∪ t)
-    = card s + card t - card (s ∩ t) := by
-  have h: card (s ∪ t) + card (s ∩ t) = card s + card t :=
-    by exact card_union_add_card_inter s t
-  exact eq_tsub_of_add_eq h
+theorem card_union_add_card_inter' (s t : Finset ℕ)
+  : card (s ∪ t) = card s + card t - card (s ∩ t) :=
+    eq_tsub_of_add_eq (card_union_add_card_inter s t)
+
+macro "count" : tactic => `(tactic|(
+  rw [mult_mul (by rfl), num_div (by linarith)] ; norm_num))
 
 -- number of multiples of 3 and 4
-lemma int_3_4 : card (set3 ∩ set4) = 167 := by
-  have h: set3 ∩ set4 = set12 := by
-    unfold set3 set4 set12 ; ext bob
-    simp only [mem_inter, mem_filter]
-    constructor ; intro h
-    all_goals simp_all only [true_and]
-    · rcases h with ⟨h₁, h₂⟩
-      exact Coprime.mul_dvd_of_dvd_of_dvd (by norm_num) h₁.2 h₂.2
-    · intro h
-      have h': 3 ∣ 12 := by norm_num
-      have h'': 4 ∣ 12 := by norm_num
-      exact ⟨Nat.dvd_trans h' h.2, Nat.dvd_trans h'' h.2⟩
-  rw [h, num_div_12]
-
--- number of multiples of 3 or 4
-lemma uni_3_4 : card (set3 ∪ set4) = 1002 := by
-  rw [card_union_add_card_inter', num_div_3, num_div_4, int_3_4]
+lemma int_3_4 : card (mult 3 ∩ mult 4) = 167 := by count
 
 -- number of multiples of 3 and 5
-lemma int_3_5 : card (set3 ∩ set5) = 134 := by
-    have h: set3 ∩ set5 = set15 := by
-      unfold set3 set5 set15 ; ext bob
-      simp only [mem_inter, mem_filter]
-      constructor ; intro h
-      all_goals simp_all only [true_and]
-      · rcases h with ⟨h₁, h₂⟩
-        exact Coprime.mul_dvd_of_dvd_of_dvd (by norm_num) h₁.2 h₂.2
-      · intro h
-        have h': 3 ∣ 15 := by norm_num
-        have h'': 5 ∣ 15 := by norm_num
-        exact ⟨Nat.dvd_trans h' h.2, Nat.dvd_trans h'' h.2⟩
-    rw [h, num_div_15]
+lemma int_3_5 : card (mult 3 ∩ mult 5) = 134 := by count
 
 -- number of multiples of 4 and 5
-lemma int_4_5 : card (set4 ∩ set5) = 101 := by
-    have h: set4 ∩ set5 = set20 := by
-      unfold set4 set5 set20 ; ext bob
-      simp only [mem_inter, mem_filter]
-      constructor ; intro h
-      all_goals simp_all only [true_and]
-      · rcases h with ⟨h₁, h₂⟩
-        exact Coprime.mul_dvd_of_dvd_of_dvd (by norm_num) h₁.2 h₂.2
-      · intro h
-        have h': 4 ∣ 20 := by norm_num
-        have h'': 5 ∣ 20 := by norm_num
-        exact ⟨Nat.dvd_trans h' h.2, Nat.dvd_trans h'' h.2⟩
-    rw [h, num_div_20]
+lemma int_4_5 : card (mult 4 ∩ mult 5) = 101 := by count
 
 -- number of multiples of 3 and 4 and 5
-lemma int_3_4_5 : card (set3 ∩ set4 ∩ set5) = 34 := by
-      have h: set3 ∩ set4 ∩ set5 = set60 := by
-        unfold set3 set4 set5 set60 ; ext bob
-        simp only [mem_inter, mem_filter]
-        constructor ; all_goals simp_all only [true_and] ; intro h
-        · rcases h with ⟨⟨h₁, h₂⟩, h₃⟩
-          have h' : 12 ∣ bob := by
-            exact Coprime.mul_dvd_of_dvd_of_dvd (by norm_num) h₁.2 h₂.2
-          exact Coprime.mul_dvd_of_dvd_of_dvd (by norm_num) h₃.2 h'
-        · have h': 3 ∣ 60 := by norm_num
-          have h'': 4 ∣ 60 := by norm_num
-          have h''': 5 ∣ 60 := by norm_num
-          constructor
-          · exact ⟨Nat.dvd_trans h' h.2, Nat.dvd_trans h'' h.2⟩
-          · exact Nat.dvd_trans h''' h.2
-      rw [h, num_div_60]
+lemma int_3_4_5 : card (mult 3 ∩ mult 4 ∩ mult 5) = 34 := by
+  rw [inter_assoc, mult_mul (by rfl)] ; count
 
--- the same sets without zero since the problem asks for positive integers
-def set3' : Finset ℕ := (Icc 1 2001).filter (3 ∣ ·)
-def set4' : Finset ℕ := (Icc 1 2001).filter (4 ∣ ·)
-def set5' : Finset ℕ := (Icc 1 2001).filter (5 ∣ ·)
+-- number of multiples of 3 or 4
+lemma uni_3_4 : card (mult 3 ∪ mult 4) = 1002 := by
+  rw [card_union_add_card_inter', int_3_4]
+  rw [num_div (by linarith), num_div (by linarith)]
+  norm_num
 
 -- in fact it doesn't matter if we include zero or not
-theorem set_eq : (set3 ∪ set4) \ set5 = (set3' ∪ set4') \ set5' := by
-  simp only [set3, set4, set5, set3', set4', set5', mem_filter, mem_union, mem_Icc, mem_sdiff]
-  ext x ; norm_num ; constructor ; swap ; tauto
-  simp_all only [Nat.isUnit_iff, OfNat.ofNat_ne_one, implies_true, and_true]
-  intro a ; rcases a with ⟨⟨h₁, h₂⟩, h₃⟩
-  <;> simp_all only [Nat.isUnit_iff, OfNat.ofNat_ne_one, forall_true_left, and_true]
-  · left ; by_cases h: x = 0
-    · subst h ; exact absurd h₃ (by norm_num)
-    · push_neg at h ; exact one_le_iff_ne_zero.mpr h
-  · right ; by_cases h: x = 0
-    · subst h ; exact absurd h₃ (by norm_num)
-    · push_neg at h ; exact one_le_iff_ne_zero.mpr h
+theorem set_eq
+  : (mult 3 ∪ mult 4) \ (mult 5) = (mult' 3 ∪ mult' 4) \ (mult' 5) := by
+  simp only [mult_eq_insert_mult', union_insert, insert_sdiff_insert]
+  simp only [insert_union, insert_sdiff_insert]
+  rw [sdiff_insert_of_not_mem]
+  simp_all
 
-theorem card_set_eq : card ((set3 ∪ set4) \ set5)
-    = card ((set3' ∪ set4') \ set5') := by
-  rw [set_eq]
-
-theorem card_with_0 : card ((set3 ∪ set4) \ set5) = 801 := by
-  rw [card_union_diff' set3 set4 set5, uni_3_4, int_3_4_5, int_3_5, int_4_5]
+theorem card_with_0 : card ((mult 3 ∪ mult 4) \ mult 5) = 801 := by
+  rw [card_union_diff', uni_3_4, int_3_4_5, int_3_5, int_4_5]
 
 --------------------------------------------------------------------------------
 ---| MAIN THEOREM |-------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-theorem intro4 : card ((set3' ∪ set4') \ set5') = 801 := by
-  rw [← card_set_eq] ; exact card_with_0
-  done
+theorem intro4 : card ((mult' 3 ∪ mult' 4) \ mult' 5) = 801 := by
+  rw [← set_eq] ; exact card_with_0
