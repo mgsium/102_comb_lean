@@ -6,7 +6,7 @@ import Mathlib.Data.Nat.Parity
 import Mathlib.Data.Nat.Order.Basic
 import Mathlib.Order.Partition.Finpartition
 
-open Finset Nat
+open Finset Nat SimpleGraph
 
 /-!
 # Intro 6 (p. 19)
@@ -33,7 +33,7 @@ variable {β : Type*} [Fintype β] [DecidableEq β] (H : SimpleGraph β)
 variable [instDecidableHAdj : DecidableRel H.Adj]
 
 -- Define the union of two simple graphs
-def union : SimpleGraph (α ⊕ β) := SimpleGraph.fromRel rel
+def union : SimpleGraph (α ⊕ β) := fromRel rel
   where rel (u v : α ⊕ β) :=
         if h : u.isLeft ∧ v.isLeft then G.Adj (u.getLeft h.1) (v.getLeft h.2)
         else if h : u.isRight ∧ v.isRight then H.Adj (u.getRight h.1) (v.getRight h.2)
@@ -44,13 +44,7 @@ def union : SimpleGraph (α ⊕ β) := SimpleGraph.fromRel rel
 instance instDecidableUnionRel {a b : α ⊕ β} : Decidable (union.rel G H a b) :=
   instDecidableDitePropNot
 
-instance : DecidableRel (union G H).Adj := by
-    unfold union SimpleGraph.fromRel
-    intro a b
-    simp only [ne_eq]
-    refine @And.decidable _ _ _ ?_
-    refine @Or.decidable _ _ ?_ ?_
-    <;> exact instDecidableUnionRel G H
+instance : DecidableRel (union G H).Adj := fun _ _ ↦ And.decidable
 
 --------------------------------------------------------------------------------
 ---| SETUP : INDEPENDENT SETS |-------------------------------------------------
@@ -82,7 +76,7 @@ lemma sum_iset_image_left (X : Finset (α ⊕ β)) (h : X ∈ indSets (union G H
     simp only [isIndSet, le_refl, Subtype.forall, true_and,mem_filter, mem_univ] at h
     have h := h _ ha _ hb
     unfold union union.rel at h
-    simp only [SimpleGraph.fromRel_adj, ne_eq, Sum.inl.injEq] at h
+    simp only [fromRel_adj, ne_eq, Sum.inl.injEq] at h
     by_cases h' : a = b
     . rw [h'] ; exact SimpleGraph.irrefl G
     . tauto
@@ -98,7 +92,7 @@ lemma sum_iset_image_right (X : Finset (α ⊕ β)) (h : X ∈ indSets (union G 
     simp only [isIndSet, le_refl, Subtype.forall, true_and,mem_filter, mem_univ] at h
     have h := h _ ha _ hb
     unfold union union.rel at h
-    simp only [SimpleGraph.fromRel_adj, ne_eq, Sum.inr.injEq] at h
+    simp only [fromRel_adj, ne_eq, Sum.inr.injEq] at h
     by_cases h' : a = b
     . rw [h'] ; exact SimpleGraph.irrefl H
     . tauto
@@ -136,34 +130,30 @@ lemma independence_number_add_le
 
 -- Definition of a cycle graph
 @[simp]
-def cycleGraph (n : ℕ) : SimpleGraph (ZMod n) := SimpleGraph.fromRel rel
-  where rel (u v : ZMod n) := v = u + 1
+def cycleGraph (n : ℕ) : SimpleGraph (ZMod n) := fromRel (fun u v ↦ v = u + 1)
+ -- where rel (u v : ZMod n) := v = u + 1
 
-instance {n : ℕ} : DecidableRel (cycleGraph.rel n) := fun _ _ ↦ decEq _ _
 instance {n : ℕ} : DecidableRel (cycleGraph n).Adj := fun _ _ ↦ And.decidable
 
 -- The neighborhood of a vertex v in a 25-cycle is the two-element
 -- set { v - 1, v + 1 }
 lemma cycle25_neighborFinset_eq {v : ZMod 25}
-  : SimpleGraph.neighborFinset (cycleGraph 25) v = { v - 1, v + 1 } := by
+  : neighborFinset (cycleGraph 25) v = { v - 1, v + 1 } := by
   ext a
-  simp_rw [SimpleGraph.mem_neighborFinset]
-  unfold cycleGraph cycleGraph.rel
-  simp_rw [SimpleGraph.fromRel_adj, ← @sub_eq_iff_eq_add _ _ v 1 a]
-  simp only [ne_eq, mem_singleton, mem_insert]
+  simp_rw [mem_neighborFinset, cycleGraph, fromRel_adj]
+  simp only [← @sub_eq_iff_eq_add _ _ v 1 a, ne_eq, mem_singleton, mem_insert]
   rw [@eq_comm _ (v - 1) a, or_comm]
   apply and_iff_right_of_imp
   intro h
   by_contra h'
   rw [h', eq_comm, sub_eq_self] at h
   simp only [self_eq_add_right] at h
-  done
 
 -- A 25-cycle is a 2-regular graph
 lemma cycle25_deg_eq {v : ZMod 25}
   : SimpleGraph.degree (cycleGraph 25) v = 2 := by
   unfold SimpleGraph.degree
-  rw [cycle25_neighborFinset_eq, Finset.card_insert_of_not_mem, card_singleton]
+  rw [cycle25_neighborFinset_eq, card_insert_of_not_mem, card_singleton]
   rw [mem_singleton]
   ring_nf
   simp only [add_left_inj]
@@ -186,8 +176,7 @@ lemma cycle25_edges
 -- * ... but this has cardinality 26 (disjoint union of 13 terms, where
 ---  each term is of cardinality 2)
 lemma indep_num_25cycle_le : independenceNumber (cycleGraph 25) ≤ 12 := by
-  unfold independenceNumber
-  unfold indSets isIndSet
+  unfold independenceNumber indSets isIndSet
   rw [Finset.sup_le_iff]
   simp_rw [mem_filter, mem_univ, le_refl, true_and]
   intro X hx
@@ -200,25 +189,24 @@ lemma indep_num_25cycle_le : independenceNumber (cycleGraph 25) ≤ 12 := by
     simp
   have h2 : 26 ≤ card NU := by
     rw [card_disjiUnion]
-    simp_rw [SimpleGraph.card_incidenceFinset_eq_degree, cycle25_deg_eq]
-    simp only [sum_const, smul_eq_mul]
-    linarith
-    unfold Set.PairwiseDisjoint Function.onFun
-    intro a ha b hb g
-    rw [disjoint_iff_ne]
-    intro z hz y hy
-    simp only [] at hz hy
-    simp_rw [@SimpleGraph.mem_incidenceFinset _ _ _ ?_ _ _] at hz hy
-    suffices g : SimpleGraph.incidenceSet (cycleGraph 25) a
-     ∩ SimpleGraph.incidenceSet (cycleGraph 25) b = ∅
-    . by_contra g'
-      rw [g'] at hz
-      have g' := Set.mem_inter hz hy
-      rw [g] at g'
-      exact g'
-    . apply SimpleGraph.incidenceSet_inter_incidenceSet_of_not_adj _ _ g
-      simp only [Subtype.forall] at hx
-      exact hx a ha b hb
+    . simp_rw [SimpleGraph.card_incidenceFinset_eq_degree, cycle25_deg_eq]
+      simp only [sum_const, smul_eq_mul]
+      linarith
+    . unfold Set.PairwiseDisjoint Function.onFun
+      intro a ha b hb g
+      rw [disjoint_iff_ne]
+      intro z hz y hy
+      simp_rw [@SimpleGraph.mem_incidenceFinset _ _ _ ?_ _ _] at hz hy
+      suffices g : SimpleGraph.incidenceSet (cycleGraph 25) a
+      ∩ SimpleGraph.incidenceSet (cycleGraph 25) b = ∅
+      . by_contra g'
+        rw [g'] at hz
+        have g' := Set.mem_inter hz hy
+        rw [g] at g'
+        exact g'
+      . apply SimpleGraph.incidenceSet_inter_incidenceSet_of_not_adj _ _ g
+        simp only [Subtype.forall] at hx
+        exact hx a ha b hb
     done
   rw [cycle25_edges] at h
   exact le_lt_antisymm h h2
@@ -231,7 +219,5 @@ lemma indep_num_25cycle_le : independenceNumber (cycleGraph 25) ≤ 12 := by
 theorem intro6
   : independenceNumber (union (cycleGraph 25) (cycleGraph 25)) ≤ 24 := by
   apply Nat.le_trans (independence_number_add_le _ _)
-  have : 24 = 2 * 12 := by norm_num
   rw [← Nat.two_mul]
   exact Nat.mul_le_mul_left 2 indep_num_25cycle_le
-  done
