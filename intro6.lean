@@ -170,6 +170,26 @@ lemma cycle25_edges
     simp_rw []
   done
 
+-- The incidence finsets of any two vertices in an independent set
+-- are pairwise disjoint
+lemma pairwise_disj_indset_incset (X : Finset α) (hx : isIndSet G X.card X)
+  : Set.PairwiseDisjoint X (G.incidenceFinset ·) := by
+  unfold Set.PairwiseDisjoint Function.onFun
+  intro a ha b hb g
+  rw [disjoint_iff_ne]
+  intro z hz y hy
+  simp_rw [@SimpleGraph.mem_incidenceFinset _ _ _ ?_ _ _] at hz hy
+  suffices g : G.incidenceSet a ∩ G.incidenceSet b = ∅
+  . by_contra g'
+    rw [g'] at hz
+    have g' := Set.mem_inter hz hy
+    rw [g] at g'
+    exact g'
+  . apply SimpleGraph.incidenceSet_inter_incidenceSet_of_not_adj _ _ g
+    simp only [isIndSet, le_refl, Subtype.forall, true_and] at hx
+    exact hx a ha b hb
+  done
+
 -- Counting argument :
 -- * union of disjoint incidence sets in an  independent set can have
 --   cardinality at most 25 (the number of edges in the graph)
@@ -178,7 +198,7 @@ lemma cycle25_edges
 lemma indep_num_25cycle_le : independenceNumber (cycleGraph 25) ≤ 12 := by
   unfold independenceNumber indSets isIndSet
   rw [Finset.sup_le_iff]
-  simp_rw [mem_filter, mem_univ, le_refl, true_and]
+  simp_rw [mem_filter, mem_univ, true_and]
   intro X hx
   by_contra g
   simp only [not_le] at g
@@ -189,24 +209,10 @@ lemma indep_num_25cycle_le : independenceNumber (cycleGraph 25) ≤ 12 := by
     simp
   have h2 : 26 ≤ card NU := by
     rw [card_disjiUnion]
-    . simp_rw [SimpleGraph.card_incidenceFinset_eq_degree, cycle25_deg_eq]
+    . simp_rw [card_incidenceFinset_eq_degree, cycle25_deg_eq]
       simp only [sum_const, smul_eq_mul]
       linarith
-    . unfold Set.PairwiseDisjoint Function.onFun
-      intro a ha b hb g
-      rw [disjoint_iff_ne]
-      intro z hz y hy
-      simp_rw [@SimpleGraph.mem_incidenceFinset _ _ _ ?_ _ _] at hz hy
-      suffices g : SimpleGraph.incidenceSet (cycleGraph 25) a
-      ∩ SimpleGraph.incidenceSet (cycleGraph 25) b = ∅
-      . by_contra g'
-        rw [g'] at hz
-        have g' := Set.mem_inter hz hy
-        rw [g] at g'
-        exact g'
-      . apply SimpleGraph.incidenceSet_inter_incidenceSet_of_not_adj _ _ g
-        simp only [Subtype.forall] at hx
-        exact hx a ha b hb
+    . exact pairwise_disj_indset_incset (cycleGraph 25) X hx
     done
   rw [cycle25_edges] at h
   exact le_lt_antisymm h h2
