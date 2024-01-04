@@ -24,49 +24,46 @@ open Finset Function
 --------------------------------------------------------------------------------
 section setup
 
+universe u
+variable {α : Type u}
 
--- universe u
--- variable {α : Type u}
+private def swapProp (p₁ p₂ : α × α) : Prop :=
+  (p₁.1 = p₂.1 ∧ p₁.2 = p₂.2) ∨ (p₁.1 = p₂.2 ∧ p₁.2 = p₂.1)
+notation:50 lhs:51 " ~ " rhs:51 => swapProp lhs rhs
 
--- def swapProp {α : Type u} (X Y : α × α) : Prop := X = Y ∨ X = Prod.swap Y
--- notation:50 lhs:51 " ~ " rhs:51 => swapProp lhs rhs
+private theorem swapProp.refl (p : α × α) : p ~ p :=
+  Or.inl ⟨rfl, rfl⟩
 
--- lemma swap.refl : Reflexive (@swapProp α) := by
---   unfold swapProp
---   intro X
---   exact Or.inl rfl
---   done
+private theorem swapProp.symm : ∀ {p₁ p₂ : α × α}, p₁ ~ p₂ → p₂ ~ p₁
+  | (a₁, a₂), (b₁, b₂), (Or.inl ⟨a₁b₁, a₂b₂⟩) =>
+    Or.inl (by simp_all)
+  | (a₁, a₂), (b₁, b₂), (Or.inr ⟨a₁b₂, a₂b₁⟩) =>
+    Or.inr (by simp_all)
 
--- lemma swap.symm : Symmetric (@swapProp α) := by
---   unfold swapProp
---   intro X Y h
---   by_cases h' : X = Y
---   . exact Or.inl h'.symm
---   . simp_rw [h'] at h
---     simp only [false_or] at h
---     exact Or.inr $ Prod.swap_inj.mp h.symm
---   done
+private theorem swapProp.trans : ∀ {p₁ p₂ p₃ : α × α}, p₁ ~ p₂ → p₂ ~ p₃ → p₁ ~ p₃
+  | (a₁, a₂), (b₁, b₂), (c₁, c₂), Or.inl ⟨a₁b₁, a₂b₂⟩, Or.inl ⟨b₁c₁, b₂c₂⟩ =>
+    Or.inl (by simp_all)
+  | (a₁, a₂), (b₁, b₂), (c₁, c₂), Or.inl ⟨a₁b₁, a₂b₂⟩, Or.inr ⟨b₁c₂, b₂c₁⟩ =>
+    Or.inr (by simp_all)
+  | (a₁, a₂), (b₁, b₂), (c₁, c₂), Or.inr ⟨a₁b₂, a₂b₁⟩, Or.inl ⟨b₁c₁, b₂c₂⟩ =>
+    Or.inr (by simp_all)
+  | (a₁, a₂), (b₁, b₂), (c₁, c₂), Or.inr ⟨a₁b₂, a₂b₁⟩, Or.inr ⟨b₁c₂, b₂c₁⟩ =>
+    Or.inl (by simp_all)
 
--- lemma swap.trans : Transitive (@swapProp α) := by
---   unfold swapProp
---   intro X Y Z hxy hyz
---   cases' hxy with a ha
---   cases' hyz with b hb
---   . exact Or.inl $ Eq.trans a b
---   . rw [← a] at hb
---     exact Or.inr hb
---   . cases' hyz with c hc
---     . rw [c] at ha
---       exact Or.inr ha
---     . apply_fun Prod.swap at hc
---       simp_rw [Prod.swap_swap] at hc
---       exact Or.inl $ Eq.trans ha hc
---   done
+theorem swapEquiv : Equivalence $ @swapProp α :=
+  ⟨swapProp.refl, swapProp.symm, swapProp.trans⟩
 
--- theorem swapEquiv : Equivalence $ @swapProp α :=
---   ⟨swapProp.refl, swapProp.symm, swapProp.trans⟩
+instance uprodSetoid (α : Type u) : Setoid (α × α) :=
+  ⟨swapProp, swapEquiv⟩
 
--- (ha : A ⊆ S) (hb : B ⊆ S)
+def UProd (α : Type u) : Type u :=
+  Quotient (uprodSetoid α)
+
+def mk {α : Type} (a₁ a₂ : α) : UProd α :=
+  Quotient.mk' (a₁, a₂)
+notation "「" a₁ ", " a₂ "」" => mk a₁ a₂
+
+--(ha : A ⊆ S) (hb : B ⊆ S)
 def union_prop (A B S : Finset ℕ) : Prop := A ∪ B = S
 
 instance decUnion_prop (S : Finset ℕ) : DecidablePred (uncurry union_prop · S) := by
@@ -76,62 +73,16 @@ instance decUnion_prop (S : Finset ℕ) : DecidablePred (uncurry union_prop · S
   exact decEq (A ∪ B) S
   done
 
-def swapProp (X Y : Finset ℕ × Finset ℕ) : Prop := X = Y ∨ X = Prod.swap Y
-
-lemma swapProp_refl : Reflexive (swapProp) := by
-  unfold swapProp
-  intro X
-  exact Or.inl rfl
-  done
-
-lemma swapProp_symm : Symmetric (swapProp) := by
-  unfold swapProp
-  intro X Y h
-  by_cases h' : X = Y
-  . exact Or.inl h'.symm
-  . simp_rw [h'] at h
-    simp only [false_or] at h
-    exact Or.inr $ Prod.swap_inj.mp h.symm
-  done
-
-lemma swapProp_trans : Transitive (swapProp) := by
-  unfold swapProp
-  intro X Y Z hxy hyz
-  cases' hxy with a ha
-  cases' hyz with b hb
-  . exact Or.inl $ Eq.trans a b
-  . rw [← a] at hb
-    exact Or.inr hb
-  . cases' hyz with c hc
-    . rw [c] at ha
-      exact Or.inr ha
-    . apply_fun Prod.swap at hc
-      simp_rw [Prod.swap_swap] at hc
-      exact Or.inl $ Eq.trans ha hc
-  done
-
-theorem swapEquiv : Equivalence swapProp :=
-  ⟨swapProp_refl, @swapProp_symm, @swapProp_trans⟩
-
-def subsetSetoid : Setoid $ Finset ℕ × Finset ℕ :=
-  { r := swapProp, iseqv := swapEquiv}
-
-instance instSubsetSetoid : Setoid $ Finset ℕ × Finset ℕ :=
-  { r := swapProp, iseqv := swapEquiv}
-
-def unordered : Type := Quotient instSubsetSetoid
-
-def upair (a b : Finset ℕ) : unordered := Quotient.mk' (a, b)
-notation "|" a "," b "|" => upair a b
-
-lemma swap_eq (a b : Finset ℕ) : |a, b| = |b, a| := by
+--「」
+lemma swap_eq (a b : Finset ℕ) : 「a, b」 = 「b, a」 := by
   refine Quot.sound ?_
   unfold Setoid.r
-  unfold instSubsetSetoid
+  unfold uprodSetoid
   simp only
   unfold swapProp
   right
   trivial
+  done
 
 def subset_dup (S : Finset ℕ) : (Finset $ Finset ℕ × Finset ℕ) :=
   filter (uncurry union_prop · S) (Finset.product (Finset.powerset S) (Finset.powerset S))
@@ -145,11 +96,15 @@ instance decUpair_Union_prop (S : Finset ℕ) : DecidablePred (uncurry upair_uni
   exact decEq (A ∪ B) S
   done
 
+def subset_pairs (S : Finset ℕ) : (Finset $ Finset ℕ × Finset ℕ) :=
+  filter (uncurry union_prop · S) (Finset.product (Finset.powerset S) (Finset.powerset S))
 
-def subset_upairs (S : Finset ℕ) : Finset unordered :=
-  filter (uncurry union_prop · S) (upair (Finset.powerset S) (Finset.powerset S))
+instance psetSetoid (P : Finset ℕ × Finset ℕ) : Setoid P :=
+   ⟨swapProp, swapEquiv⟩
 
-
+def subset_upairs (P : Finset $ Finset ℕ × Finset ℕ) : (Finset $ UProd $ Finset ℕ) :=
+  Quotient psetSetoid
+  done
 
 end setup
 --------------------------------------------------------------------------------
