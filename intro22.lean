@@ -32,40 +32,6 @@ private def swapProp (p₁ p₂ : α × α) : Prop :=
   (p₁.1 = p₂.1 ∧ p₁.2 = p₂.2) ∨ (p₁.1 = p₂.2 ∧ p₁.2 = p₂.1)
 notation:50 lhs:51 " ~ " rhs:51 => swapProp lhs rhs
 
-private theorem swapProp.refl (p : α × α) : p ~ p :=
-  Or.inl ⟨rfl, rfl⟩
-
-private theorem swapProp.symm : ∀ {p₁ p₂ : α × α}, p₁ ~ p₂ → p₂ ~ p₁
-  | (a₁, a₂), (b₁, b₂), (Or.inl ⟨a₁b₁, a₂b₂⟩) =>
-    Or.inl (by simp_all)
-  | (a₁, a₂), (b₁, b₂), (Or.inr ⟨a₁b₂, a₂b₁⟩) =>
-    Or.inr (by simp_all)
-
-private theorem swapProp.trans : ∀ {p₁ p₂ p₃ : α × α}, p₁ ~ p₂ → p₂ ~ p₃ → p₁ ~ p₃
-  | (a₁, a₂), (b₁, b₂), (c₁, c₂), Or.inl ⟨a₁b₁, a₂b₂⟩, Or.inl ⟨b₁c₁, b₂c₂⟩ =>
-    Or.inl (by simp_all)
-  | (a₁, a₂), (b₁, b₂), (c₁, c₂), Or.inl ⟨a₁b₁, a₂b₂⟩, Or.inr ⟨b₁c₂, b₂c₁⟩ =>
-    Or.inr (by simp_all)
-  | (a₁, a₂), (b₁, b₂), (c₁, c₂), Or.inr ⟨a₁b₂, a₂b₁⟩, Or.inl ⟨b₁c₁, b₂c₂⟩ =>
-    Or.inr (by simp_all)
-  | (a₁, a₂), (b₁, b₂), (c₁, c₂), Or.inr ⟨a₁b₂, a₂b₁⟩, Or.inr ⟨b₁c₂, b₂c₁⟩ =>
-    Or.inl (by simp_all)
-
-theorem swapEquiv : Equivalence $ @swapProp α :=
-  ⟨swapProp.refl, swapProp.symm, swapProp.trans⟩
-
-instance uprodSetoid (α : Type u) : Setoid (α × α) :=
-  ⟨swapProp, swapEquiv⟩
-
-def UProd (α : Type u) : Type u :=
-  Quotient (uprodSetoid α)
-
-def mk {α : Type} (a₁ a₂ : α) : UProd α :=
-  Quotient.mk' (a₁, a₂)
-notation "「" a₁ ", " a₂ "」" => mk a₁ a₂
---「a,b」for an unordered pair
-
---(ha : A ⊆ S) (hb : B ⊆ S)
 def union_prop (A B S : Finset ℕ) : Prop := A ∪ B = S
 
 instance decUnion_prop (S : Finset ℕ) : DecidablePred (uncurry union_prop · S) := by
@@ -73,16 +39,6 @@ instance decUnion_prop (S : Finset ℕ) : DecidablePred (uncurry union_prop · S
   intro ⟨A,B⟩
   simp only
   exact decEq (A ∪ B) S
-  done
-
-lemma swap_eq (a b : Finset ℕ) : 「a, b」 = 「b, a」 := by
-  refine Quot.sound ?_
-  unfold Setoid.r
-  unfold uprodSetoid
-  simp only
-  unfold swapProp
-  right
-  trivial
   done
 
 def subset_dup (S : Finset ℕ) : (Finset $ Finset ℕ × Finset ℕ) :=
@@ -100,24 +56,8 @@ instance decUpair_Union_prop (S : Finset ℕ) : DecidablePred (uncurry upair_uni
 def subset_pairs (S : Finset ℕ) : (Finset $ Finset ℕ × Finset ℕ) :=
   filter (uncurry union_prop · S) (Finset.product (Finset.powerset S) (Finset.powerset S))
 
-private def swapPropN (p₁ p₂ : Finset ℕ × Finset ℕ) : Prop :=
-  (p₁.1 = p₂.1 ∧ p₁.2 = p₂.2) ∨ (p₁.1 = p₂.2 ∧ p₁.2 = p₂.1)
-notation:50 lhs:51 " ~ " rhs:51 => swapProp lhs rhs
-
-instance uprodSetoidN : Setoid (Finset ℕ × Finset ℕ) :=
-  ⟨swapPropN, swapEquiv⟩
-
-def subset_upairs (S : Finset ℕ) : Finset (Finset ℕ × Finset ℕ) :=
-  --Quotient (uprodSetoid $ Finset ℕ)
-  -- filter (x ↦ Quotient.mk' (uncurry union_prop · S) x) (Finset.product (Finset.powerset S) (Finset.powerset S))
-  --Quotient.mk' (subset_pairs S)
-  --filter (uncurry union_prop · S) (Finset.powerset S).sym2
-  Sym2.mk $ subset_pairs S
-
-
-#check subset_pairs {1,2,3}
-#check uprodSetoid $ Finset ℕ
-#check Quotient (uprodSetoid $ Finset ℕ)
+def subset_upairs (S : Finset ℕ) : Finset (Sym2 $ Finset ℕ) :=
+  image (Quot.mk (Sym2.Rel $ Finset ℕ) · ) $ subset_pairs S
 
 end setup
 --------------------------------------------------------------------------------
@@ -130,30 +70,29 @@ end useful_lemmas
 ---| MAIN THEOREM |-------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-#eval subset_pairs {1,2,3}
-
 set_option maxRecDepth 8000
 
-theorem test : card (subset_pairs {1,2}) = 9 := by
-   decide
-   done
+theorem test : card (subset_upairs {1,2}) = 5 := by
+  decide
+  done
 
--- theorem test2 : card (subset_pairs {1,2,3}) = 27 := by
---   decide
---   done
+theorem test2 : card (subset_upairs {1,2,3}) = 14 := by
+  decide
+  done
 
--- theorem test3 : card (subset_pairs {1,2,3,4}) = 81 := by
---   decide
---   done
+theorem test3 : card (subset_upairs {1,2,3,4}) = 41 := by
+  decide
+  done
 
--- theorem test4 : card (subset_pairs {1,2,3,4,5}) = 243 := by
---   decide
---   done
+theorem test4 : card (subset_upairs {1,2,3,4,5}) = 122 := by
+  sorry
+  done
 
--- theorem intro22 : card (subset_pairs $ Finset.Icc 1 6) = 729 := by
---   decide
---   done
+theorem intro22 : card (subset_pairs $ Finset.Icc 1 6) = 365 := by
+  sorry
+  done
 
--- theorem intro22generalisation (n : ℕ) : card (subset_pairs $ Finset.Icc 1 n) = (3^n - 1) / 2 + 1 := by
---   sorry
---   done
+theorem intro22generalisation (n : ℕ)
+  : card (subset_pairs $ Finset.Icc 1 n) = (3^n - 1) / 2 + 1 := by
+  sorry
+  done
