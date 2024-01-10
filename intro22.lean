@@ -65,6 +65,30 @@ end setup
 --------------------------------------------------------------------------------
 section useful_lemmas
 
+notation:50 lhs:51 " ⊻ " rhs:51 => lhs ↔ ¬rhs
+
+
+lemma ree (A B S : Finset ℕ) (ha : A ⊆ S) (hb : B ⊆ S) : union_prop A B S ↔
+  ∀ s ∈ S, ((s ∈ A ∧ s ∉ B) ⊻ (s ∉ A ∧ s ∈ B)) ⊻ (s ∈ A ∧ s ∈ B)
+  := by
+  unfold union_prop
+  constructor
+  . intro h s g
+    have h' : s ∈ A ∨ s ∈ B := by
+      rw [← h] at g
+      simp only [mem_union] at g
+      exact g
+    cases h' <;> simp_all
+  . intro h
+    ext r
+    simp only [mem_union]
+    constructor
+    . tauto
+    . intro g
+      have h' := h r g
+      tauto
+  done
+
 end useful_lemmas
 --------------------------------------------------------------------------------
 ---| MAIN THEOREM |-------------------------------------------------------------
