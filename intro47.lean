@@ -27,14 +27,14 @@ open BigOperators Finset SProd
 ---| SETUP |--------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
--- A chessboard is a 1998 × 2002 grid of squares
+-- a chessboard is a 1998 × 2002 grid of squares
 def chessboard : Type := Fin 1998 × Fin 2002
 instance instDecidableEqChessboard : DecidableEq chessboard :=
   instDecidableEqProd
 instance instFintypeChessboard : Fintype chessboard :=
   instFintypeProd (Fin 1998) (Fin 2002)
 
--- Standard chessboard coloring, starting with white
+-- standard chessboard coloring, starting with white
 -- in the top left corner
 def standard_coloring (sq : chessboard) : ZMod 2 :=
   sq.1.val + sq.2.val
@@ -45,17 +45,17 @@ def white_squares : Finset chessboard := filter (white_square ·) univ
 def black_square (sq : chessboard) : Bool := standard_coloring sq = 1
 def black_squares : Finset chessboard := filter (black_square ·) univ
 
--- Define a numbering of the squares
+-- define a numbering of the squares
 def numbering : Type := chessboard → ZMod 2
 
--- A given row contains an odd number of 1s
+-- a given row contains an odd number of 1s
 def odd_row (f : numbering) (row : Fin 1998) : Prop :=
   Odd (∑ x in univ, (f (row, x)).val)
--- A given col contains an odd number of 1s
+-- a given col contains an odd number of 1s
 def odd_column (f : numbering) (col : Fin 2002) : Prop :=
   Odd (∑ x in univ, (f (x, col)).val)
 
--- Each row and each column contain an odd number of 1s
+-- each row and each column contain an odd number of 1s
 def all_row_col_odd (f : numbering) : Prop :=
   (∀ (row : Fin 1998), odd_row f row) ∧ (∀ (col : Fin 2002), odd_column f col)
 
@@ -69,7 +69,7 @@ def even_cols := filter (fun x => Even x.val) (@univ (Fin 2002) _)
 ---| USEFUL LEMMAS |------------------------------------------------------------
 --------------------------------------------------------------------------------
 
--- The coerced universal Finset for Fin n is equal to range n
+-- the coerced universal Finset for Fin n is equal to range n
 lemma img_val_fin_eq (n : ℕ)
   : image (fun x => x.val) (@univ (Fin n) _) = range n := by
   ext a
@@ -89,14 +89,14 @@ lemma filter_eq' (S : Finset ℕ) (p : ℕ → Prop) [DecidablePred p]
   tauto
   done
 
--- Number of odd rows is odd
+-- number of odd rows is odd
 lemma odd_card_odd_rows : Odd (card odd_rows) := by
   unfold odd_rows
   rw [← (@card_image_iff _ _ _ (fun x => x.val) _).mpr]
   . rw [← image_filter, img_val_fin_eq, ← sum_odd_odd' _, sum_range_id]; norm_num
   . simp only [Function.Injective.injOn, Fin.val_injective]
 
--- Number of even columns is odd
+-- number of even columns is odd
 lemma odd_card_even_cols : Odd (card even_cols) := by
   unfold even_cols
   rw [← (@card_image_iff _ _ _ (fun x => x.val) _).mpr]
@@ -109,14 +109,14 @@ lemma odd_card_even_cols : Odd (card even_cols) := by
     norm_num
   . simp only [Function.Injective.injOn, Fin.val_injective]
 
--- Sum of cells in odd rows
+-- sum of cells in odd rows
 def Rₒ (f : numbering) := ∑ i in odd_rows , ∑ j in univ, (f ⟨i, j⟩).val
--- Sum of cells in even columns
+-- sum of cells in even columns
 def Cₑ (f : numbering) := ∑ j in even_cols, ∑ i in univ, (f ⟨i, j⟩).val
 
 variable (f : numbering) (h : all_row_col_odd f)
 
--- a sqaure is black iff it is not white
+-- a square is black iff it is not white
 lemma black_square_iff_not_white {sq : chessboard} :
   black_square sq ↔ ¬ white_square sq := by
   unfold black_square white_square
@@ -167,7 +167,7 @@ lemma odd_odd_disj_even_even :
   tauto
   done
 
--- The sum of all black squares in even columns
+-- the sum of all black squares in even columns
 def B : Finset chessboard :=
   filter (fun s => black_square s ∧ Even s.2.val) univ
 def SB (f : numbering) := ∑ s in B, (f s).val
@@ -217,7 +217,7 @@ lemma even_r_add_c_sub_b : Even (Rₒ f + Cₑ f - 2 * SB f) := by
   done
 
 -- (set of Rₒ ∪ set of Cₑ) ∖ B = white_squares
-lemma r_union_c_minus_b_eq_white_sqaures : white_squares
+lemma r_union_c_minus_b_eq_white_squares : white_squares
   = ((odd_rows ×ˢ univ) ∪ (univ ×ˢ even_cols)) \ B := by
   ext a
   unfold B white_squares odd_rows even_cols
@@ -232,7 +232,7 @@ lemma r_union_c_minus_b_eq_white_sqaures : white_squares
 -- sum of even rows, even cols + sum of odd rows, odd col
 lemma odd_even_sub_eq_sum_white : Rₒ f + Cₑ f - 2 * SB f = ∑ sq in white_squares ∩
     (((odd_rows ×ˢ univ) ∪ (univ ×ˢ even_cols)) \ B), (f sq).val := by
-    rw [← r_union_c_minus_b_eq_white_sqaures, inter_self]
+    rw [← r_union_c_minus_b_eq_white_squares, inter_self]
     unfold Rₒ Cₑ
     rw [sum_comm]
     conv => lhs; lhs; rhs; rw [sum_comm]
@@ -254,7 +254,7 @@ lemma odd_even_sub_eq_sum_white : Rₒ f + Cₑ f - 2 * SB f = ∑ sq in white_s
 
 theorem intro47 : Even (∑ sq in white_squares, (f sq).val) := by
   rw [← inter_self white_squares]
-  nth_rewrite 2 [r_union_c_minus_b_eq_white_sqaures]
+  nth_rewrite 2 [r_union_c_minus_b_eq_white_squares]
   rw [← odd_even_sub_eq_sum_white f]
   exact even_r_add_c_sub_b f h
   done
