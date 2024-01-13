@@ -4,13 +4,16 @@ open Set Nat
 
 /-!
 # Intro 24 (pp. 34-35) | [MOSP 1997]
-
 Let A and B be disjoint sets whose union is the set of natural numbers.
 Show that for every natural number n, there exist distinct a, b > n such that
-{a, b, a+b} ⊆ A or {a, b, a+b} ⊆ B.
+{a, b, a+b} ⊆ A or {a, b, a + b} ⊆ B.
 
 ## Solution
-...
+Suppose A is finite, with largest element m. Then, n+1, n+2, and 2n+3 = (n+1) +
+(n+2) are all in B for any n ≥ m. Otherwise, if A is infinite, suppose there is
+a positive integer n such that for any a,b > n, {a, b, a + b} is not a subset
+or A nor of B. As A is infinite, we may choose x,y,z ∈ A such that x > y > z > n
+and y - z > n. Then {x + y, y + z, z + x} ⊆ B, and y - z has no place to go.
 -/
 
 --------------------------------------------------------------------------------
@@ -19,11 +22,14 @@ Show that for every natural number n, there exist distinct a, b > n such that
 
 variable (A B : Set ℕ) (disjAB : Disjoint A B) (unionAB : A ∪ B = univ)
 
+-- For disjoint sets A and B, n ∈ B if and only if n ∉ A.
 lemma mem_B_iff_not_mem_A {n : ℕ} : n ∈ B ↔ n ∉ A := by
   rw [← Disjoint.sdiff_eq_of_sup_eq disjAB unionAB]; simp
 
+-- If A is finite, then there exist distinct a,b > n such that {a, b, a + b}
+-- is a subset of A, or a subset of B.
 lemma intro24_of_finite (n : ℕ) (h : Set.Finite A)
-  : ∃ a b, n < a ∧ n < b ∧ a ≠ b ∧ ({a, b, a+b} ⊆ A ∨ {a, b, a+b} ⊆ B) := by
+  : ∃ a b, n < a ∧ n < b ∧ a ≠ b ∧ ({a, b, a + b} ⊆ A ∨ {a, b, a + b} ⊆ B) := by
   let Af := @Set.toFinset _ A (Finite.fintype h)
   rw [← Disjoint.sdiff_eq_of_sup_eq disjAB unionAB]
   by_cases h' : Finset.Nonempty Af
@@ -49,6 +55,8 @@ lemma intro24_of_finite (n : ℕ) (h : Set.Finite A)
     use n + 1, n + 2; simp
   done
 
+-- If A is infinite, then there exist distinct a,b > n such that {a, b, a + b}
+-- is a subset of A, or a subset of B.
 lemma intro24_of_infinite (n : ℕ) (h : Set.Infinite A)
   : ∃ a b, n < a ∧ n < b ∧ a ≠ b ∧ ({a, b, a+b} ⊆ A ∨ {a, b, a+b} ⊆ B) := by
   by_contra h'
