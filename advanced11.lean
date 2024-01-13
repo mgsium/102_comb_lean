@@ -1,8 +1,19 @@
 import Mathlib.Tactic
 
-open Set
-open Finset
-open Nat
+/-!
+# Advanced 11 (p. 59) | [MOSP 1999]
+
+Let X be a finite set of positive integers and A a subset of X.
+Prove that there exists a subset B of X such that A equals the set of elements
+of X which divide an odd number of elements of B.
+
+## Solution Sketch
+
+...
+
+-/
+
+open Set Finset Nat
 
 -- x divides an odd number of elements of B
 def odd_divides (x : ℕ) (B : Finset ℕ) : Bool :=
@@ -21,10 +32,6 @@ example (i k : ℕ) (h : i ≤ k) : i - 1 ≤ k := by
 def calc_Xᵢ (i : ℕ) (X : Finset ℕ) : Finset ℕ :=
   List.toFinset $ List.take i $ X.sort (· ≥ ·)
 
---lemma eq_calc_zero (X : Finset ℕ) : calc_Xᵢ 0 X = {} := by
---  simp [calc_Xᵢ]
---  done
-
 lemma list_take_subset (X : List ℕ) (k : ℕ)
   : List.take k X ⊆ List.take (k + 1) X := by
   intro x h
@@ -37,8 +44,7 @@ lemma list_take_subset (X : List ℕ) (k : ℕ)
 lemma finset_subset (X Y: List ℕ) (h : X ⊆ Y)
   : X.toFinset ⊆ Y.toFinset := by
   intro x h2
-  simp at h2 ⊢
-  exact h h2
+  simp [h (List.mem_dedup.mp h2)]
   done
 
 lemma calc_X_inc (X : Finset ℕ) (i : ℕ)
@@ -161,21 +167,6 @@ def fix_five (i : ℕ) : Finset ℕ := match i with
   | k+1 => if k+1<5 then
     nat_num_set (k) ∪ {i}
     else nat_num_set (5)
-
-
-lemma pain (a b : ℕ) (h : a≥3) : a + b = b + a := by
-  by_cases
-  sorry
-  sorry
-  sorry
---lemma ree (i : ℕ) (h : i≥5): fix_five i = fix_five 5 := by
---  induction generalising i
---  . contradiction
-
-
-
-  done
-
 
 lemma calc_Bᵢ_zero (X A : Finset ℕ)
   : calc_Bᵢ 0 X A = ∅ := rfl
