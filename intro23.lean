@@ -1,7 +1,4 @@
-
-
 import Mathlib.Tactic
-
 /-!
 # Intro 23 (p.34) | [AIME 2001]
 
@@ -12,8 +9,6 @@ import Mathlib.Tactic
 > possible value of n?
 
 -/
-
-
 
 open Finset
 open Nat
@@ -89,22 +84,25 @@ theorem intro23_upper_bound (n : ℕ)
 
 
 
-
-
-
-
-
+variable [X : LinearOrder ℕ]
 
 
 lemma exists_solution : ∃n, all_c_subsets_satisfy_tri_prop 10 n := by
   unfold all_c_subsets_satisfy_tri_prop
-  have h : ¬(∀X, (X ⊆ four_to_n 0 ∧ card X = 10)) := by
-    simp
+  have _ : ¬(∀X, (X ⊆ four_to_n 0 ∧ card X = 10)) := by
+    simp only [not_forall, not_and]
     use ∅
-    simp
+    exact fun _ ↦ ne_of_beq_eq_false rfl
   use 0
   by_contra g
-  simp at g
+  simp only [and_imp] at g
+  done
+
+instance decAllSubsetsSatTriProp10 (c : ℕ) : DecidablePred (all_c_subsets_satisfy_tri_prop c ·) := by
+  intro n
+  unfold all_c_subsets_satisfy_tri_prop
+  simp only [and_imp]
+  exact decidableForallOfDecidableSubsets
   done
 
 #eval Nat.find exists_solution
