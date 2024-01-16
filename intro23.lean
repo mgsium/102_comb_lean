@@ -9,6 +9,14 @@ is positive. Consider sets {4,5,6,...,n} of consecutive positive integers, all
 of whose ten-element subsets have the triangle property. What is the largest
 possible value of n?
 
+## Solution
+
+We find a counterexample for n = 254; namely,
+
+    {4, 5, 9, 14, 23, 37, 60, 97, 157, 254}
+
+then show that any counterexample for n = k is also a counterexample for
+n = k + 1.
 -/
 
 open Finset Nat List
@@ -18,11 +26,11 @@ open Finset Nat List
 --------------------------------------------------------------------------------
 section setup
 
-def tri_ineq (a b c : ℕ) : Prop :=
+def tri_ineq (a b c : ℕ) : Bool :=
   a + b > c
 
 -- a, b, and c satisfy tri_ineq in all permutations
-def tri_prop (X : Finset ℕ) : Prop :=
+def tri_prop (X : Finset ℕ) : Bool :=
   ∃ a b c : X, a≠b ∧ b≠c ∧ c≠a
   ∧ tri_ineq a b c
   ∧ tri_ineq b c a
@@ -39,7 +47,7 @@ end setup
 --------------------------------------------------------------------------------
 section useful_lemmas
 
--- [4,n] ⊆ [4,n+1]
+-- [4,n] ⊆ [4,n+1] for all n
 lemma four_to_n_subset {n : ℕ} : Icc 4 n ⊆ Icc 4 (n+1) := by
   intro x h
   simp only [gt_iff_lt, mem_Icc] at *
