@@ -8,7 +8,7 @@ import Mathlib.Data.List.Intervals
 
 -/
 
-open Nat Finset Set List
+open Nat Finset Set
 
 --------------------------------------------------------------------------------
 ---| SETUP |--------------------------------------------------------------------
@@ -32,40 +32,28 @@ def fromIndex (i : ℕ) (h : 0 < i) :=
   Finset.min' (Finset.filter (toIndex · ≥ i) (range (i+1))) e
   where e := by use i ; simp [le_toIndex i]
 
--- returns the ith digit
-def atIndex (i : ℕ) (h : 0 < i) : ℕ :=
-  (digits 10 k)[toIndex k - i]!
-  where k := fromIndex i h
-
-#eval toIndex 10
-#eval fromIndex 15 (by linarith)
-#eval atIndex 15 (by linarith)
-
-lemma valid_index (n : ℕ) {h : 0 < n} : toIndex (fromIndex n h) ≤ n := by
-  unfold toIndex
-  split
-  . linarith
-  . rename_i _ x heq
-    have reeeeee : toIndex (succ x) ≤ n := by
-      unfold fromIndex at heq
-      apply (Finset.mem_filter.mp _).2
-      . exact Finset.filter (fun x ↦ toIndex x ≤ n) (Finset.range (n + 1))
-      . sorry --apply heq ▸ Finset.max'_mem
-      done
-    sorry
+lemma fromIndex_eq_zero_iff (i : ℕ) (h : 0 < i) : fromIndex i h ≠ 0 := by
+  by_contra h'
+  unfold fromIndex at h'
+  have h'' := min'_mem (Finset.filter (fun x ↦ toIndex x ≥ i) (Finset.range (i + 1)))
+    (by use i ; simp [le_toIndex i])
+  rw [h', mem_filter, (by rfl : toIndex 0 = 0)] at h''
+  linarith
   done
 
--- lemma ree (n: ℕ) {h : 0 < n}
---     : n - toIndex (fromIndex n h) < length (digits 10 n) := by
---   rw [Nat.digits_len 10 n (by linarith) (by linarith)]
---   unfold toIndex
---   split <;> rename_i x heq
---   .
---   . rename_i x n_1 heq
---     simp_all only [ne_eq, ge_iff_le, gt_iff_lt]
+-- returns the ith digit
+def atIndex (i : ℕ) (h : 0 < i) : ℕ :=
+  List.get (digits 10 $ fromIndex i h) (Fin.ofNat' (toIndex (fromIndex i h) - i)
+  (by
+  rw [digits_len]
+  simp_all only [ne_eq, gt_iff_lt, add_pos_iff, log_pos_iff, and_true, or_true]
+  . linarith
+  . exact fromIndex_eq_zero_iff i h
+  ))
 
---   done
-
+-- #eval toIndex 10
+-- #eval fromIndex 15 (by linarith)
+-- #eval atIndex 15 (by linarith)
 
 end setup
 --------------------------------------------------------------------------------
@@ -79,6 +67,9 @@ end useful_lemmas
 --------------------------------------------------------------------------------
 -- #eval atIndex 1983 (by linarith)
 
+-- #eval fromIndex 1983 (by linarith)
+
 -- theorem intro5 : atIndex 1983 (by norm_num) = 7 := by
+--   unfold atIndex
 
 --   done
