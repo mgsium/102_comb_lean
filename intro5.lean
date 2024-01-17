@@ -15,37 +15,57 @@ open Nat Finset Set List
 --------------------------------------------------------------------------------
 section setup
 
-
 -- n ↦ index of last digit of n in string 12345...n
-def myFunc : ℕ → ℕ
+def toIndex : ℕ → ℕ
   | 0     => 0
-  | n + 1 => (log 10 $ n + 1) + 1 + myFunc n
+  | n + 1 => (log 10 (n + 1)) + 1 + toIndex n
 
--- n ↦ minimum k such that myFunc k ≥ n
-def myInv (n : ℕ) (h : 0 < n) :=
-  Finset.max' (Finset.filter (myFunc · < n) (range n)) e + 1
-  where e := by use 0; simp [h, (by ring_nf : myFunc 0 = 0)]
+lemma le_toIndex (n : ℕ) : n ≤ toIndex n := by
+  induction' n with d hd
+  . rfl
+  . unfold toIndex
+    linarith
+  done
 
-def at_index (n : ℕ) (h : 0 < n) : ℕ := myInv n h - n
+-- i ↦ the number the ith digit is in
+def fromIndex (i : ℕ) (h : 0 < i) :=
+  Finset.min' (Finset.filter (toIndex · ≥ i) (range (i+1))) e
+  where e := by use i ; simp [le_toIndex i]
 
-#eval at_index 10 (by linarith)
+-- returns the ith digit
+def atIndex (i : ℕ) (h : 0 < i) : ℕ :=
+  (digits 10 k)[toIndex k - i]!
+  where k := fromIndex i h
 
-#eval myFunc 11
-#eval @myInv 12 (by linarith)
+#eval toIndex 10
+#eval fromIndex 15 (by linarith)
+#eval atIndex 15 (by linarith)
 
--- foldr implementation
--- def concatenate (L : List ℕ)
---     : ℕ := L.foldr (fun x y => x + 10^((log 10 x)+1) * y) 0
+lemma valid_index (n : ℕ) {h : 0 < n} : toIndex (fromIndex n h) ≤ n := by
+  unfold toIndex
+  split
+  . linarith
+  . rename_i _ x heq
+    have reeeeee : toIndex (succ x) ≤ n := by
+      unfold fromIndex at heq
+      apply (Finset.mem_filter.mp _).2
+      . exact Finset.filter (fun x ↦ toIndex x ≤ n) (Finset.range (n + 1))
+      . sorry --apply heq ▸ Finset.max'_mem
+      done
+    sorry
+  done
 
-def concatenate : List ℕ -> ℕ
-  | [] => 0
-  | x :: xs => x + 10 ^ ((log 10 x) + 1) * concatenate xs
+-- lemma ree (n: ℕ) {h : 0 < n}
+--     : n - toIndex (fromIndex n h) < length (digits 10 n) := by
+--   rw [Nat.digits_len 10 n (by linarith) (by linarith)]
+--   unfold toIndex
+--   split <;> rename_i x heq
+--   .
+--   . rename_i x n_1 heq
+--     simp_all only [ne_eq, ge_iff_le, gt_iff_lt]
 
-#eval concatenate [12,20]
+--   done
 
-def a_b_num (a b : ℕ) : ℕ := concatenate (List.Ico a (b+1)).reverse
-
-def a_b_arr (a b : ℕ) : List ℕ := (digits 10 $ a_b_num a b).reverse
 
 end setup
 --------------------------------------------------------------------------------
@@ -57,7 +77,8 @@ end useful_lemmas
 --------------------------------------------------------------------------------
 ---| MAIN THEOREM |-------------------------------------------------------------
 --------------------------------------------------------------------------------
+-- #eval atIndex 1983 (by linarith)
 
-theorem intro5 : (a_b_arr 1 1000)[1983]'(by sorry) = 7 := by
-  sorry
-  done
+-- theorem intro5 : atIndex 1983 (by norm_num) = 7 := by
+
+--   done
