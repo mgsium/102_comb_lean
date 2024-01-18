@@ -73,3 +73,53 @@ end useful_lemmas
 --   unfold atIndex
 
 --   done
+
+-- def myList : ℕ → List ℕ
+--   | 0 => []
+--   | succ n => myList n ++ (digits 10 $ succ n).reverse
+
+-- lemma nonempty_myList (n : ℕ) (h : 0 < n) : myList n ≠ [] := by
+--   unfold myList
+--   split
+--   . trivial
+--   . simp_all only [succ_pos', digits_of_two_le_of_pos, ne_eq, List.reverse_cons, List.append_eq_nil,
+--       List.reverse_eq_nil, and_false, not_false_eq_true]
+--   done
+
+-- lemma nonempty_digits (n : ℕ) (h : 0 < n) : 0 < List.length (digits 10 n) := by
+--   have g : 0 ≠ n := by exact Nat.ne_of_lt h
+--   rw [List.length_pos_iff_ne_nil]
+--   rw [Nat.digits_ne_nil_iff_ne_zero]
+--   exact g.symm
+--   done
+
+-- lemma last_digit (n : ℕ) {h : 0 < n} : List.getLast (myList n) (nonempty_myList n h)
+--     = (digits 10 n)[0]'(nonempty_digits n h) := by
+--   simp_all only [digits_of_two_le_of_pos, ne_eq, List.getElem_eq_get, List.length_cons, Fin.zero_eta,
+--     List.get_cons_zero]
+--   unfold myList
+--   split
+--   . trivial
+--   . simp_all only [succ_pos', digits_of_two_le_of_pos, ne_eq, List.reverse_cons]
+
+--   done
+
+def f : ℕ → List ℕ
+  | 0 => []
+  | succ n => f n ++ (digits 10 $ succ n).reverse
+
+abbrev f' (n m: ℕ) := (f m).drop (f n).length
+
+#eval f' 697 700
+#eval f 700 = f 697 ++ f' 697 700
+#eval (f 700).splitAt 1983 = (f 697, f' 697 700)
+
+-- example : (f 697).length = 1983 := by rfl
+
+lemma split (n : ℕ) (h : 1983 ≤ (f n).length) : ((f n).splitAt 1983).1 = f 697 := by
+  sorry
+  done
+
+lemma intro5 (n : ℕ) (h : 1983 ≤ (f n).length) : (f n)[1982]'h = 7 := by
+  sorry
+  done
