@@ -33,7 +33,7 @@ end setup
 --------------------------------------------------------------------------------
 section useful_lemmas
 
-lemma neq_leq' {a b : ℕ} : (a ≤ b + 1 ∧ a ≠ b + 1) ↔ a ≤ b := by
+lemma neq_leq {a b : ℕ} : (a ≤ b + 1 ∧ a ≠ b + 1) ↔ a ≤ b := by
   constructor <;> intro h
   . rw [le_iff_lt_or_eq]
     exact lt_succ_iff_lt_or_eq.mp <| Nat.lt_iff_le_and_ne.mpr h
