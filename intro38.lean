@@ -321,6 +321,18 @@ lemma sum_of_B_elem_deg_even : ∀(p : V),
   done
 
 
+lemma in_closed_nh_comp_iff_not_adj : ∀(p q : V), q ∈ closed_nh_comp _ G p ↔ ¬Adj G p q := by
+  intro p q
+  unfold closed_nh_comp closed_neighborFinset
+  constructor <;> intro g
+  . simp_all only [mem_sdiff, mem_attach, mem_insert, mem_neighborFinset, true_and, Subtype.mk.injEq]
+    intro _
+    simp_all only [or_true, not_true_eq_false]
+  .
+
+  done
+
+
 theorem intro38
   : ∃(a b : V), Even (card (G.neighborFinset a ∩ G.neighborFinset b)) := by
   by_contra g
@@ -339,18 +351,23 @@ theorem intro38
       → Odd (card (G.neighborFinset q ∩ closed_neighborFinset G p)) := by
     intro p q h
 
-    have temp : G.neighborFinset q ∩ (closed_neighborFinset G p \ {p})
+    have : G.neighborFinset q ∩ (closed_neighborFinset G p \ {p})
         = (G.neighborFinset q ∩ closed_neighborFinset G p) := by
       unfold closed_neighborFinset
       ext v
       simp only [mem_inter, mem_neighborFinset, mem_sdiff, mem_insert, mem_singleton,
         and_congr_right_iff, and_iff_left_iff_imp]
+      have : ¬Adj G q p := by
+        unfold closed_nh_comp closed_neighborFinset at h
+
+        done
       intro g g'
       have : ¬q = v := by
         by_contra g''
         rw [g''] at g
         simp only [SimpleGraph.irrefl] at g
-      .
+      have : Adj G p v := by
+
       -- have : ¬Adj G p p := SimpleGraph.irrefl G
       -- by_contra h''
       -- push_neg at h''
