@@ -170,158 +170,199 @@ lemma inter_sdiff_empty_eq { A B C : Finset ℕ }
 --------------------------------------------------------------------------------
 ---| MAIN THEOREM |-------------------------------------------------------------
 --------------------------------------------------------------------------------
-variable (V : Finset ℕ)
-variable (G : SimpleGraph V)
+variable (n : ℕ)
+variable (V : Finset ℕ) (c : V.card = 2 * n)
+variable (G : SimpleGraph V) [DecidableRel G.Adj] [nei: Nonempty V] (hdeg : ∀ (v : V), Even (G.degree v))
 variable (H : Subgraph G)
 
-theorem intro38(n : ℕ) [DecidableRel G.Adj] [nei: Nonempty V]
-  (hdeg : ∀ (v : V), Even (G.degree v) ) (c : V.card = 2 * n)
+-- A := N(p)
+def closed_nh_comp := λ v ↦ V.attach \ closed_neighborFinset G v
+
+-- We have an even number of vertices
+lemma V_even : Even V.card := by {simp_rw [← even_iff_eq_nat_mul_two]; use n}
+lemma card_V_gt_zero : 0 < card V := by
+  simp only [Finset.card_pos]
+  exact nonempty_coe_sort.mp nei
+  done
+
+lemma one_le_V : 1 ≤ V.card := by
+  by_cases h : n = 0
+  . rw [h] at c
+    simp at c
+    rw [c] at nei
+    simp_all only [not_mem_empty, nonempty_subtype, exists_const]
+  . push_neg at h
+    rw [← one_le_iff_ne_zero] at h
+    linarith
+  done
+
+lemma V_take_vertex_even : ∀ (p : V), Odd (card $ V.attach.erase p) := by
+  simp only [mem_attach, card_erase_of_mem, card_attach]
+  intro _
+  apply Nat.Even.sub_odd (by exact one_le_V _ _ c) (V_even _ _ c) odd_one
+  done
+
+-- B := (V ∖ {p}) ∖ A
+lemma V_take_open_nh_even
+  : ∀ (p : V), Even (card $ V.attach \ G.neighborFinset p) := by
+  intro p
+  rw [card_sdiff]
+  . simp only [card_attach]
+    refine Even.tsub (V_even _ _ c) ?_
+    rw [card_neighborFinset_eq_degree]
+    exact hdeg p
+  . intro x
+    simp only [mem_neighborFinset, mem_attach, implies_true]
+  done
+
+-- Closed neighborhood has even cardinality
+lemma closed_nh_even (p : V) : Odd (card $ closed_neighborFinset G p) := by
+  rw [card_closed_neighborFinset_eq_deg_add_one G p]
+  exact Even.add_one (hdeg p)
+  done
+
+-- Vertex set is non-empty
+lemma nonempty_V_aux : Finset.Nonempty V := Finset.card_pos.mp (card_V_gt_zero _)
+lemma nonempty_V : Nonempty V := Set.Nonempty.coe_sort (nonempty_V_aux _)
+
+-- The cardinality of B is odd
+lemma V_take_closed_nh_odd
+  : ∀ (p : V), Odd (card $ closed_nh_comp _ G p) := by
+  intro p
+  unfold closed_nh_comp
+  rw [card_sdiff, card_attach]
+  apply Nat.Even.sub_odd _ (V_even _ _ c) (closed_nh_even _ _ hdeg p)
+  rw [← Fintype.subtype_card V (λ x ↦ Iff.rfl)]
+  exact card_le_univ (closed_neighborFinset G p)
+  unfold closed_neighborFinset
+  apply insert_subset
+  . exact mem_attach V p
+  . rw [subset_iff]
+    intro x _
+    exact mem_attach V x
+  done
+
+-- Vertices in B are not adjacent to p
+lemma h₃ : ∀(p q : V), q ∈ closed_nh_comp _ G p → ¬G.Adj p q := by
+  unfold closed_nh_comp
+  simp only [mem_sdiff, mem_attach, mem_neighborFinset, true_and]
+  unfold closed_neighborFinset
+  intro p q
+  contrapose; simp only [not_not]
+  rw [← mem_neighborFinset]
+  exact mem_insert_of_mem
+  done
+
+lemma disjoint_lemma : ∀ (p q : V), Disjoint
+  (G.neighborFinset q ∩ G.neighborFinset p)
+  (G.neighborFinset q ∩ closed_nh_comp _ G p) := by
+  unfold closed_nh_comp
+  intro p q
+  rw [disjoint_iff_inter_eq_empty, inter_left_comm, inter_sdiff_super]
+  . exact inter_empty _
+  . apply subset_trans (inter_subset_right _ _)
+    unfold closed_neighborFinset
+    exact subset_insert _ _
+  done
+
+
+lemma part_V_by_nh
+  : ∀ (p : V), V.attach = closed_nh_comp _ G p ∪ closed_neighborFinset G p := by
+  unfold closed_nh_comp
+  simp only [sdiff_union_self_eq_union, left_eq_union]
+  aesop_graph
+  done
+
+lemma inter_eq_sdiff_comp_nh : ∀ (p q : V),
+  neighborFinset G q \ closed_nh_comp _ G p
+  = neighborFinset G q ∩ closed_neighborFinset G p := by
+  unfold closed_nh_comp
+  aesop_graph
+  done
+
+example (p q : Prop) (h : p ∨ q) (g : ¬p) : q := by tauto
+
+
+
+-- deg_B(q) is odd
+lemma degree_in_B_odd : ∀(p q : V), q ∈ closed_nh_comp _ G p
+  → Odd (card (G.neighborFinset q ∩ closed_nh_comp _ G p)) := by
+  intro p q h
+  rw [(sdiff_sdiff_self_left _ _).symm]
+  rw [card_sdiff (sdiff_subset _ _)]
+  apply Nat.Even.sub_odd _ (hdeg q) _
+  . apply le_trans
+    . exact Nat.le_add_right _ (card (neighborFinset G q ∩ closed_nh_comp _ G p))
+    . unfold closed_nh_comp
+      rw [Finset.card_sdiff_add_card_inter]
+      exact Nat.le_refl _
+  . rw [inter_eq_sdiff_comp_nh]
+    exact h₅ _ _ p q h
+  done
+
+-- The sum of the degrees of elements in B is odd
+lemma sum_of_B_elem_deg_odd : ∀(p : V), Odd (∑ q in closed_nh_comp _ G p,
+  (card (G.neighborFinset q ∩ closed_nh_comp _ G p))) := by
+  intro p
+  rw [sum_odd_odd $ closed_nh_comp _ G p]
+  . exact V_take_closed_nh_odd _ _ c _ hdeg p
+  . intro q h
+    exact degree_in_B_odd _ _ hdeg p q h
+  done
+
+
+-- Follows from Euler's handshaking lemma applied to the subgraph induced
+-- on the closed neighbourhood of p.
+lemma sum_of_B_elem_deg_even : ∀(p : V),
+  ¬Odd (∑ q in closed_nh_comp _ G p, (card (G.neighborFinset q ∩ closed_nh_comp _ G p))) := by
+  intro p
+  -- The graph api for inducing subgraphs is horrible.
+  sorry
+  done
+
+
+theorem intro38
   : ∃(a b : V), Even (card (G.neighborFinset a ∩ G.neighborFinset b)) := by
   by_contra g
   push_neg at g
-
-  -- A := N(p)
-  let closed_nh_comp := λ v ↦ V.attach \ closed_neighborFinset G v
-
-  -- We have an even number of vertices
-  have V_even : Even V.card := by {simp_rw [← even_iff_eq_nat_mul_two]; use n}
-  have card_V_gt_zero : 0 < card V := by
-    simp only [card_pos]
-    exact nonempty_coe_sort.mp nei
-    done
-
-  have V_take_vertex_even : ∀ (p : V), Odd (card $ V.attach.erase p) := by
-    simp only [mem_attach, card_erase_of_mem, card_attach]
-    intro v
-    apply Nat.Even.sub_odd (by linarith) V_even odd_one
-    done
-
-  -- B := (V ∖ {p}) ∖ A
-  have V_take_open_nh_even
-    : ∀ (p : V), Even (card $ V.attach \ G.neighborFinset p) := by
-    intro p
-    rw [card_sdiff]
-    . simp only [card_attach]
-      refine Even.tsub V_even ?_
-      rw [card_neighborFinset_eq_degree]
-      exact hdeg p
-    . intro x
-      simp only [mem_neighborFinset, mem_attach, implies_true]
-    done
-
-  -- Closed neighborhood has even cardinality
-  have closed_nh_even (p : V) : Odd (card $ closed_neighborFinset G p) := by
-    rw [card_closed_neighborFinset_eq_deg_add_one G p]
-    exact Even.add_one (hdeg p)
-    done
-
-  -- Vertex set is non-empty
-  have : Finset.Nonempty V := card_pos.mp card_V_gt_zero
-  have : Nonempty V := Set.Nonempty.coe_sort this
-
-  -- The cardinality of B is odd
-  have V_take_closed_nh_odd
-    : ∀ (p : V), Odd (card $ closed_nh_comp p) := by
-    intro p
-    rw [card_sdiff, card_attach]
-    apply Nat.Even.sub_odd _ V_even (closed_nh_even p)
-    rw [← Fintype.subtype_card V (λ x ↦ Iff.rfl)]
-    exact card_le_univ (closed_neighborFinset G p)
-    unfold closed_neighborFinset
-    apply insert_subset
-    . exact mem_attach V p
-    . rw [subset_iff]
-      intro x hₓ
-      exact mem_attach V x
-    done
-
-  -- Vertices in B are not adjacent to p
-  have h₃ : ∀(p q : V), q ∈ closed_nh_comp p → ¬G.Adj p q := by
-    simp only [mem_sdiff, mem_attach, mem_neighborFinset, true_and]
-    unfold closed_neighborFinset
-    intro p q
-    contrapose; simp only [not_not]
-    rw [← mem_neighborFinset]
-    exact mem_insert_of_mem
-    done
-
   -- deg_A(q) is odd
-  have h₄ : ∀(p q : V), q ∈ closed_nh_comp p
-    → Odd (card (G.neighborFinset q ∩ neighborFinset G p))  := by
-    exact fun p q _ ↦ (fun {n} ↦ odd_iff_not_even.mpr) (g q p)
-    done
-  -- ???
-
-
-  have h₅ : ∀(p q : V), q ∈ closed_nh_comp p
-    → Odd (card (G.neighborFinset q ∩ closed_neighborFinset G p)) := by
-    intro p q h
-    have temp : G.neighborFinset q ∩ (closed_neighborFinset G p \ {p}) = ∅ := by
-      sorry
-      done
-    --apply inter_sdiff_empty_eq.symm ?_
-    sorry
-    done
-
-  --
-  have disjoint_lemma : ∀ (p q : V), Disjoint
-    (G.neighborFinset q ∩ G.neighborFinset p)
-    (G.neighborFinset q ∩ closed_nh_comp p) := by
-    intro p q
-    rw [disjoint_iff_inter_eq_empty, inter_left_comm]
-    rw [inter_sdiff_super]
-    exact inter_empty _
-    apply subset_trans (inter_subset_right _ _)
-    unfold closed_neighborFinset
-    exact subset_insert _ _
-    done
-
-  have part_V_by_nh
-    : ∀ (p : V), V.attach = closed_nh_comp p ∪ closed_neighborFinset G p := by
-    simp only [sdiff_union_self_eq_union, left_eq_union]
-    sorry --aesop_graph
-    done
-
-  have inter_eq_sdiff_comp_nh : ∀ (p q : V),
-    neighborFinset G q \ closed_nh_comp p
-    = neighborFinset G q ∩ closed_neighborFinset G p := by
-    sorry --aesop_graph
-    done
+  have h₄ : ∀(p q : V), q ∈ closed_nh_comp _ G p
+      → Odd (card (G.neighborFinset q ∩ neighborFinset G p))
+    := fun p q _ ↦ (fun {n} ↦ odd_iff_not_even.mpr) (g q p)
 
   -- example {α : Type u_1} [DecidableEq α] (s : Finset α) (t : Finset α) :
   --   s ∩ t = s \ (s \ t) := by
   --   exact (sdiff_sdiff_self_left s t).symm
   --   done
 
-  -- deg_B(q) is odd
-  have degree_in_B_odd : ∀(p q : V), q ∈ closed_nh_comp p
-    → Odd (card (G.neighborFinset q ∩ closed_nh_comp p)) := by
+  have h₅ : ∀(p q : V), q ∈ closed_nh_comp _ G p
+      → Odd (card (G.neighborFinset q ∩ closed_neighborFinset G p)) := by
     intro p q h
-    rw [(sdiff_sdiff_self_left _ _).symm]
-    rw [card_sdiff (sdiff_subset _ _)]
-    apply Nat.Even.sub_odd _ (hdeg q) _
-    . apply le_trans
-      . exact Nat.le_add_right _ (card (neighborFinset G q ∩ closed_nh_comp p))
-      . rw [card_sdiff_add_card_inter]
-        exact Nat.le_refl _
-    . rw [inter_eq_sdiff_comp_nh]
-      exact h₅ p q h
-    done
 
-  -- The sum of the degrees of elements in B is odd
-  have sum_of_B_elem_deg_odd : ∀(p : V), Odd (∑ q in closed_nh_comp p,
-    (card (G.neighborFinset q ∩ closed_nh_comp p))) := by
-    intro p
-    rw [sum_odd_odd $ closed_nh_comp p]
-    . exact V_take_closed_nh_odd p
-    . intro q h
-      exact degree_in_B_odd p q h
-    done
+    have temp : G.neighborFinset q ∩ (closed_neighborFinset G p \ {p})
+        = (G.neighborFinset q ∩ closed_neighborFinset G p) := by
+      unfold closed_neighborFinset
+      ext v
+      simp only [mem_inter, mem_neighborFinset, mem_sdiff, mem_insert, mem_singleton,
+        and_congr_right_iff, and_iff_left_iff_imp]
+      intro g g'
+      have : ¬q = v := by
+        by_contra g''
+        rw [g''] at g
+        simp only [SimpleGraph.irrefl] at g
+      .
+      -- have : ¬Adj G p p := SimpleGraph.irrefl G
+      -- by_contra h''
+      -- push_neg at h''
+      -- have : Adj G p v := by tauto
 
-  have sum_of_B_elem_deg_even : ∀(p : V),
-    ¬Odd (∑ q in closed_nh_comp p, (card (G.neighborFinset q ∩ closed_nh_comp p))) := by
-    intro p
+      done
+    -- unfold closed_neighborFinset
+    -- aesop
+    -- exact h₄ p q h
+    -- apply inter_sdiff_empty_eq.symm ?_
     sorry
     done
+
 
   done
