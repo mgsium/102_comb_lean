@@ -280,13 +280,69 @@ lemma inter_eq_sdiff_comp_nh : ∀ (p q : V),
   aesop_graph
   done
 
-example (p q : Prop) (h : p ∨ q) (g : ¬p) : q := by tauto
+lemma not_in_neighborFinset (v : V) : ¬v ∈ (neighborFinset G v) := by
+  simp_all only [mem_neighborFinset, SimpleGraph.irrefl]
+  done
 
+lemma insert_sdiff_disj (x : V) (X : Finset  V) (h : ¬x ∈ X)
+    : (insert x X) \ {x} = X := by
+  ext y
+  constructor
+  <;> intro h'
+  <;> simp_all only [mem_insert, or_false, not_true, mem_sdiff, mem_singleton,
+    or_true, true_and]
+  . tauto
+  . exact ne_of_mem_of_not_mem h' h
+  done
 
+-- deg_A(q) is odd
+lemma odd_deg_A_q (g : ∀ (a b : { x // x ∈ V }),
+    ¬Even (card (neighborFinset G a ∩ neighborFinset G b)))
+    : ∀(p q : V), q ∈ closed_nh_comp _ G p
+    → Odd (card (G.neighborFinset q ∩ neighborFinset G p))
+  := fun p q _ ↦ (fun {_} ↦ odd_iff_not_even.mpr) (g q p)
+
+lemma in_closed_nh_comp_iff_not_adj (p q : V) : q ∈ closed_nh_comp _ G p ↔ (¬Adj G p q ∧ p ≠ q) := by
+  unfold closed_nh_comp closed_neighborFinset
+  constructor <;> intro g
+  . simp_all only [mem_sdiff, mem_attach, mem_insert, mem_neighborFinset, true_and, Subtype.mk.injEq]
+    push_neg at *
+    tauto
+  . rw [← mem_neighborFinset] at g
+    rw [mem_sdiff, mem_insert]
+    push_neg
+    simp_all only [ne_eq, mem_neighborFinset, mem_attach, not_false_eq_true, and_true,
+      true_and]
+    exact Ne.symm g.2
+  done
+
+lemma h₅ (g : ∀ (a b : { x // x ∈ V }),
+    ¬Even (card (neighborFinset G a ∩ neighborFinset G b))) : ∀(p q : V), q ∈ closed_nh_comp _ G p
+    → Odd (card (G.neighborFinset q ∩ closed_neighborFinset G p)) := by
+  intro p q h
+  have : G.neighborFinset q ∩ (closed_neighborFinset G p \ {p})
+      = (G.neighborFinset q ∩ closed_neighborFinset G p) := by
+    unfold closed_neighborFinset
+    ext v
+    simp only [mem_inter, mem_neighborFinset, mem_sdiff, mem_insert, mem_singleton,
+      and_congr_right_iff, and_iff_left_iff_imp]
+    intro g g'
+    rw [in_closed_nh_comp_iff_not_adj] at h
+    by_contra a
+    rw [a] at g
+    tauto
+    done
+  rw [← this]
+  unfold closed_neighborFinset
+  rw [insert_sdiff_disj V p (G.neighborFinset p) $ not_in_neighborFinset _ _ _]
+  exact odd_deg_A_q _ _ g p q h
+  done
 
 -- deg_B(q) is odd
-lemma degree_in_B_odd : ∀(p q : V), q ∈ closed_nh_comp _ G p
-  → Odd (card (G.neighborFinset q ∩ closed_nh_comp _ G p)) := by
+lemma degree_in_B_odd (g : ∀ (a b : { x // x ∈ V }),
+    ¬Even (card (neighborFinset G a ∩ neighborFinset G b)))
+    : ∀(p q : V), q ∈ closed_nh_comp _ G p
+    → Odd (card (G.neighborFinset q ∩ closed_nh_comp _ G p)) := by
   intro p q h
   rw [(sdiff_sdiff_self_left _ _).symm]
   rw [card_sdiff (sdiff_subset _ _)]
@@ -294,22 +350,22 @@ lemma degree_in_B_odd : ∀(p q : V), q ∈ closed_nh_comp _ G p
   . apply le_trans
     . exact Nat.le_add_right _ (card (neighborFinset G q ∩ closed_nh_comp _ G p))
     . unfold closed_nh_comp
-      rw [Finset.card_sdiff_add_card_inter]
+      rw [card_sdiff_add_card_inter]
       exact Nat.le_refl _
   . rw [inter_eq_sdiff_comp_nh]
-    exact h₅ _ _ p q h
+    exact h₅ V G g p q h
   done
 
 -- The sum of the degrees of elements in B is odd
-lemma sum_of_B_elem_deg_odd : ∀(p : V), Odd (∑ q in closed_nh_comp _ G p,
+lemma sum_of_B_elem_deg_odd (g : ∀ (a b : { x // x ∈ V }),
+    ¬Even (card (neighborFinset G a ∩ neighborFinset G b))) : ∀(p : V), Odd (∑ q in closed_nh_comp _ G p,
   (card (G.neighborFinset q ∩ closed_nh_comp _ G p))) := by
   intro p
   rw [sum_odd_odd $ closed_nh_comp _ G p]
   . exact V_take_closed_nh_odd _ _ c _ hdeg p
   . intro q h
-    exact degree_in_B_odd _ _ hdeg p q h
+    exact degree_in_B_odd _ _ hdeg g _ _ h
   done
-
 
 -- Follows from Euler's handshaking lemma applied to the subgraph induced
 -- on the closed neighbourhood of p.
@@ -320,66 +376,18 @@ lemma sum_of_B_elem_deg_even : ∀(p : V),
   sorry
   done
 
-
-lemma in_closed_nh_comp_iff_not_adj : ∀(p q : V), q ∈ closed_nh_comp _ G p ↔ ¬Adj G p q := by
-  intro p q
-  unfold closed_nh_comp closed_neighborFinset
-  constructor <;> intro g
-  . simp_all only [mem_sdiff, mem_attach, mem_insert, mem_neighborFinset, true_and, Subtype.mk.injEq]
-    intro _
-    simp_all only [or_true, not_true_eq_false]
-  .
-
-  done
-
-
 theorem intro38
   : ∃(a b : V), Even (card (G.neighborFinset a ∩ G.neighborFinset b)) := by
   by_contra g
   push_neg at g
-  -- deg_A(q) is odd
-  have h₄ : ∀(p q : V), q ∈ closed_nh_comp _ G p
-      → Odd (card (G.neighborFinset q ∩ neighborFinset G p))
-    := fun p q _ ↦ (fun {n} ↦ odd_iff_not_even.mpr) (g q p)
 
-  -- example {α : Type u_1} [DecidableEq α] (s : Finset α) (t : Finset α) :
-  --   s ∩ t = s \ (s \ t) := by
-  --   exact (sdiff_sdiff_self_left s t).symm
-  --   done
-
-  have h₅ : ∀(p q : V), q ∈ closed_nh_comp _ G p
-      → Odd (card (G.neighborFinset q ∩ closed_neighborFinset G p)) := by
-    intro p q h
-
-    have : G.neighborFinset q ∩ (closed_neighborFinset G p \ {p})
-        = (G.neighborFinset q ∩ closed_neighborFinset G p) := by
-      unfold closed_neighborFinset
-      ext v
-      simp only [mem_inter, mem_neighborFinset, mem_sdiff, mem_insert, mem_singleton,
-        and_congr_right_iff, and_iff_left_iff_imp]
-      have : ¬Adj G q p := by
-        unfold closed_nh_comp closed_neighborFinset at h
-
-        done
-      intro g g'
-      have : ¬q = v := by
-        by_contra g''
-        rw [g''] at g
-        simp only [SimpleGraph.irrefl] at g
-      have : Adj G p v := by
-
-      -- have : ¬Adj G p p := SimpleGraph.irrefl G
-      -- by_contra h''
-      -- push_neg at h''
-      -- have : Adj G p v := by tauto
-
-      done
-    -- unfold closed_neighborFinset
-    -- aesop
-    -- exact h₄ p q h
-    -- apply inter_sdiff_empty_eq.symm ?_
-    sorry
-    done
-
-
+  have odd : ∀(p : V), Odd (∑ q in closed_nh_comp _ G p,
+      (card (G.neighborFinset q ∩ closed_nh_comp _ G p)))
+    := fun p ↦ sum_of_B_elem_deg_odd n V c G hdeg g p
+  have even : ∀(p : V), ¬Odd (∑ q in closed_nh_comp _ G p,
+      (card (G.neighborFinset q ∩ closed_nh_comp _ G p)))
+    := fun p ↦ sum_of_B_elem_deg_even V G p
+  simp_all only [odd_iff_not_even, not_not]
+  apply even
+  exact?
   done
