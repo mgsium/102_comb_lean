@@ -89,12 +89,6 @@ lemma inter_sdiff_super {α : Type u_1} [DecidableEq α] (A B C : Finset α)
     exact subset_trans (inter_subset_left B A) h
     done
 
--- This is in mathlib, but my install can't find it??
-@[simp]
-lemma card_sdiff_add_card_inter {α : Type u_1} [DecidableEq α] (s t : Finset α) :
-    (s \ t).card + (s ∩ t).card = s.card := by
-  rw [← card_disjoint_union (disjoint_sdiff_inter _ _), sdiff_union_inter]
-
 lemma one_leq_odd (x : ℕ) (h' : Odd x) : 1 ≤ x := by
     unfold Odd at h'
     cases' h' with r hr
@@ -155,6 +149,7 @@ theorem sum_odd_odd {V : Finset ℕ} {f : V → ℕ} :
     have : Odd (f x) := (ha x) (mem_insert_self x X)
     simp only [true_iff, this]
     rw [← not_iff_not]
+    simp only [odd_one, true_iff]
     repeat rw [← odd_iff_not_even]
     apply h'
     intro x hx
@@ -168,11 +163,13 @@ lemma inter_sdiff_empty_eq { A B C : Finset ℕ }
   done
 
 --------------------------------------------------------------------------------
----| MAIN THEOREM |-------------------------------------------------------------
+----------------------| Graph stuff properly starts here |----------------------
 --------------------------------------------------------------------------------
+
 variable (n : ℕ)
 variable (V : Finset ℕ) (c : V.card = 2 * n)
-variable (G : SimpleGraph V) [DecidableRel G.Adj] [nei: Nonempty V] (hdeg : ∀ (v : V), Even (G.degree v))
+variable (G : SimpleGraph V)
+variable [DecidableRel G.Adj] [nei: Nonempty V] (hdeg : ∀ (v : V), Even (G.degree v))
 variable (H : Subgraph G)
 
 -- A := N(p)
@@ -243,7 +240,7 @@ lemma V_take_closed_nh_odd
   done
 
 -- Vertices in B are not adjacent to p
-lemma h₃ : ∀(p q : V), q ∈ closed_nh_comp _ G p → ¬G.Adj p q := by
+lemma in_B_not_adj_p : ∀(p q : V), q ∈ closed_nh_comp _ G p → ¬G.Adj p q := by
   unfold closed_nh_comp
   simp only [mem_sdiff, mem_attach, mem_neighborFinset, true_and]
   unfold closed_neighborFinset
@@ -265,7 +262,6 @@ lemma disjoint_lemma : ∀ (p q : V), Disjoint
     exact subset_insert _ _
   done
 
-
 lemma part_V_by_nh
   : ∀ (p : V), V.attach = closed_nh_comp _ G p ∪ closed_neighborFinset G p := by
   unfold closed_nh_comp
@@ -281,7 +277,7 @@ lemma inter_eq_sdiff_comp_nh : ∀ (p q : V),
   done
 
 lemma not_in_neighborFinset (v : V) : ¬v ∈ (neighborFinset G v) := by
-  simp_all only [mem_neighborFinset, SimpleGraph.irrefl]
+  simp_all only [mem_neighborFinset, SimpleGraph.irrefl, not_false_eq_true]
   done
 
 lemma insert_sdiff_disj (x : V) (X : Finset  V) (h : ¬x ∈ X)
@@ -316,8 +312,9 @@ lemma in_closed_nh_comp_iff_not_adj (p q : V) : q ∈ closed_nh_comp _ G p ↔ (
     exact Ne.symm g.2
   done
 
-lemma h₅ (g : ∀ (a b : { x // x ∈ V }),
-    ¬Even (card (neighborFinset G a ∩ neighborFinset G b))) : ∀(p q : V), q ∈ closed_nh_comp _ G p
+lemma in_closed_nh_comp_imp_odd_intersection (g : ∀ (a b : { x // x ∈ V }),
+    ¬Even (card (neighborFinset G a ∩ neighborFinset G b)))
+    : ∀(p q : V), q ∈ closed_nh_comp _ G p
     → Odd (card (G.neighborFinset q ∩ closed_neighborFinset G p)) := by
   intro p q h
   have : G.neighborFinset q ∩ (closed_neighborFinset G p \ {p})
@@ -350,10 +347,10 @@ lemma degree_in_B_odd (g : ∀ (a b : { x // x ∈ V }),
   . apply le_trans
     . exact Nat.le_add_right _ (card (neighborFinset G q ∩ closed_nh_comp _ G p))
     . unfold closed_nh_comp
-      rw [card_sdiff_add_card_inter]
+      rw [_root_.card_sdiff_add_card_inter]
       exact Nat.le_refl _
   . rw [inter_eq_sdiff_comp_nh]
-    exact h₅ V G g p q h
+    exact in_closed_nh_comp_imp_odd_intersection V G g p q h
   done
 
 -- The sum of the degrees of elements in B is odd
@@ -372,15 +369,20 @@ lemma sum_of_B_elem_deg_odd (g : ∀ (a b : { x // x ∈ V }),
 lemma sum_of_B_elem_deg_even : ∀(p : V),
   ¬Odd (∑ q in closed_nh_comp _ G p, (card (G.neighborFinset q ∩ closed_nh_comp _ G p))) := by
   intro p
-  -- The graph api for inducing subgraphs is horrible.
+  -- The graph api for inducing subgraphs is horrible:
+  -- The vertex type changes, and coercing back to the parent graph type
+  -- destroys the adjacency information.
   sorry
   done
+
+--------------------------------------------------------------------------------
+---| MAIN THEOREM |-------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 theorem intro38
   : ∃(a b : V), Even (card (G.neighborFinset a ∩ G.neighborFinset b)) := by
   by_contra g
   push_neg at g
-
   have odd : ∀(p : V), Odd (∑ q in closed_nh_comp _ G p,
       (card (G.neighborFinset q ∩ closed_nh_comp _ G p)))
     := fun p ↦ sum_of_B_elem_deg_odd n V c G hdeg g p
@@ -389,5 +391,5 @@ theorem intro38
     := fun p ↦ sum_of_B_elem_deg_even V G p
   simp_all only [odd_iff_not_even, not_not]
   apply even
-  exact?
+  simp_all only [nonempty_subtype, Subtype.forall, imp_false, exists_const]
   done
