@@ -149,7 +149,7 @@ theorem sum_odd_odd {V : Finset ℕ} {f : V → ℕ} :
     have : Odd (f x) := (ha x) (mem_insert_self x X)
     simp only [true_iff, this]
     rw [← not_iff_not]
-    simp only [odd_one, true_iff]
+    --simp only [odd_one, true_iff]
     repeat rw [← odd_iff_not_even]
     apply h'
     intro x hx
@@ -161,6 +161,12 @@ lemma inter_sdiff_empty_eq { A B C : Finset ℕ }
   rw [← union_sdiff_of_subset h2, inter_distrib_left]
   simp only [h, union_empty]
   done
+
+-- This is in mathlib, but my install can't find it??
+@[simp]
+lemma card_sdiff_add_card_inter {α : Type u_1} [DecidableEq α] (s t : Finset α) :
+    (s \ t).card + (s ∩ t).card = s.card := by
+  rw [← card_disjoint_union (disjoint_sdiff_inter _ _), sdiff_union_inter]
 
 --------------------------------------------------------------------------------
 ----------------------| Graph stuff properly starts here |----------------------
@@ -347,7 +353,7 @@ lemma degree_in_B_odd (g : ∀ (a b : { x // x ∈ V }),
   . apply le_trans
     . exact Nat.le_add_right _ (card (neighborFinset G q ∩ closed_nh_comp _ G p))
     . unfold closed_nh_comp
-      rw [_root_.card_sdiff_add_card_inter]
+      rw [card_sdiff_add_card_inter]
       exact Nat.le_refl _
   . rw [inter_eq_sdiff_comp_nh]
     exact in_closed_nh_comp_imp_odd_intersection V G g p q h
