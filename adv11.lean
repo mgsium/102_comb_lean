@@ -180,7 +180,7 @@ lemma calc_Bᵢ_i_geq_card_X (X A : Finset ℕ) (i : ℕ) (h : i ≥ card X)
     rw [h]
     rfl
   | succ n ih =>
-
+    sorry
     done
 
 def adv_11_ith_step (X A : Finset ℕ) (i : ℕ) :=

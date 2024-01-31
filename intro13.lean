@@ -30,8 +30,6 @@ instance decQuadProp : DecidablePred quadProp := by
 
 def quadSet : Finset (Fin 99 × Fin 99 × Fin 99 × Fin 99) :=
   filter (quadProp ·) univ
-  -- filter (fun _ => False) univ
-
 
 end setup
 --------------------------------------------------------------------------------
@@ -39,15 +37,15 @@ end setup
 --------------------------------------------------------------------------------
 section useful_lemmas
 
+lemma nCr : Nat.choose 50 3 = 19600 := rfl
+
 end useful_lemmas
 --------------------------------------------------------------------------------
 ---| MAIN THEOREM |-------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-
 theorem intro13 : card quadSet = 19600 := by
+  rw [← nCr]
   unfold quadSet quadProp
-  unfold univ
-
 
   done

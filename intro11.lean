@@ -69,7 +69,7 @@ lemma sel_image (sel : List ℕ) {l : sel.length = 5} (h : diff sel)
     unhygienic with_reducible aesop_destruct_products
     let ⟨a, b, c, d⟩ := left
     repeat' apply And.intro
-
+    all_goals sorry
     done
 
 end useful_lemmas
