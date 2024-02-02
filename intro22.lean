@@ -59,12 +59,6 @@ def subset_pairs (S : Finset ℕ) : (Finset $ Finset ℕ × Finset ℕ) :=
 def subset_upairs (S : Finset ℕ) : Finset (Sym2 $ Finset ℕ) :=
   image (Quot.mk (Sym2.Rel $ Finset ℕ) · ) $ subset_pairs S
 
-def pairs_prop (X : Finset (Sym2 $ Finset ℕ)) (S : Finset ℕ) : Prop
-    := ∀Y∈X, union_prop A B S
-      where
-      A := Sym2.out_fst_mem Y
-      B := Sym2.out_snd_mem Y
-
 end setup
 --------------------------------------------------------------------------------
 ---| USEFUL LEMMAS |------------------------------------------------------------
@@ -74,7 +68,7 @@ section useful_lemmas
 notation:50 lhs:51 " ⊻ " rhs:51 => lhs ↔ ¬rhs
 
 
-lemma step (A B S : Finset ℕ) (ha : A ⊆ S) (hb : B ⊆ S) : union_prop A B S ↔
+lemma ree (A B S : Finset ℕ) (ha : A ⊆ S) (hb : B ⊆ S) : union_prop A B S ↔
   ∀ s ∈ S, ((s ∈ A ∧ s ∉ B) ⊻ (s ∉ A ∧ s ∈ B)) ⊻ (s ∈ A ∧ s ∈ B)
   := by
   unfold union_prop
@@ -94,6 +88,32 @@ lemma step (A B S : Finset ℕ) (ha : A ⊆ S) (hb : B ⊆ S) : union_prop A B S
       have h' := h r g
       tauto
   done
+
+
+#check (singleton 2 : Finset ℕ)
+
+#eval (singleton (2, 3) : Finset (ℕ × ℕ))
+
+-- def Conf (n : ℕ) := Finset (Fin n × Fin 3)
+
+-- structure Conf (n : ℕ) where
+--   val : Finset (Fin n × Fin 3)
+--   pf  : card (filter (fun x ↦ x.2 = 2) val) ≤ card (filter (fun x ↦ x.2 = 1) val)
+
+#eval filter (fun (x : ℕ × ℕ) => x.2 = 2) (singleton (2, 3))
+
+def one_gt_two {n : ℕ} (S : Finset $ Fin n × Fin 3) :=
+  card (filter (fun x ↦ x.2 = 2) S) ≤ card (filter (fun x ↦ x.2 = 1) S)
+
+-- Cardinality of fintype (filter?)
+-- example (n : ℕ) : Fintype.card (Conf n) = (3^n - 1)/2 + 1 := by
+
+--   done
+
+-- Cardinality of universal set
+-- example (n : ℕ) : card (filter one_gt_two (@univ (Conf n) _)) = (3^n - 1)/2 + 1 := by
+
+--   done
 
 end useful_lemmas
 --------------------------------------------------------------------------------
@@ -118,13 +138,11 @@ theorem test4 : card (subset_upairs {1,2,3,4,5}) = 122 := by
   sorry
   done
 
-theorem intro22 : card (subset_pairs $ Finset.Icc 1 6) = 365 := by
+theorem intro22 : card (subset_upairs $ Finset.Icc 1 6) = 365 := by
   sorry
   done
 
 theorem intro22generalisation (n : ℕ)
   : card (subset_pairs $ Finset.Icc 1 n) = (3^n - 1) / 2 + 1 := by
-  refine @Finset.induction (Sym2 $ Finset ℕ) pairs_prop _ ?_ ?_ _
-
   sorry
   done
