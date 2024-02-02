@@ -140,8 +140,6 @@ lemma sum_zero : ∑ x in {0}, x = 0 := by exact rfl
 
 variable (S : Finset ℤ)
 
-lemma (n : ℕ)
-
 def mySet (n : ℕ) : Finset ℕ :=
   Icc 1 n ∪ Finset.biUnion (Icc 2 $ n-1)
     (fun j => singleton ((n - j) * (n + 1) * ∏ i in (Icc 0 $ j - 2), (n - i)))
@@ -150,7 +148,7 @@ lemma split_prod_Icc (n : ℕ) : ∏ i in Icc 0 (n + 1)
 
 lemma rw_prod (n j : ℕ) (hj : 1 < j) (hn : j < n) : (n - j) * (n + 1) * ∏ i in Icc 0 (j - 2), (n - i)
     = ((n + 1) * ∏ i in Icc 0 (j - 1), (n - i)) - ((n + 1) * ∏ i in Icc 0 (j - 2), (n - i)) := by
-
+  sorry
   done
 
 lemma sum_set (n : ℕ) (h : 0 < n) : Finset.sum (mySet n) id = (n + 1)! := by
@@ -160,7 +158,7 @@ lemma sum_set (n : ℕ) (h : 0 < n) : Finset.sum (mySet n) id = (n + 1)! := by
   nth_rw 2 [← sum_zero]
   rw [sum_sdiff (zero_subset_range n h), sum_range_id (n+1)]
   norm_num
-
+  sorry
   done
 
 end useful_lemmas

@@ -59,6 +59,12 @@ def subset_pairs (S : Finset ℕ) : (Finset $ Finset ℕ × Finset ℕ) :=
 def subset_upairs (S : Finset ℕ) : Finset (Sym2 $ Finset ℕ) :=
   image (Quot.mk (Sym2.Rel $ Finset ℕ) · ) $ subset_pairs S
 
+def pairs_prop (X : Finset (Sym2 $ Finset ℕ)) (S : Finset ℕ) : Prop
+    := ∀Y∈X, union_prop A B S
+      where
+      A := Sym2.out_fst_mem Y
+      B := Sym2.out_snd_mem Y
+
 end setup
 --------------------------------------------------------------------------------
 ---| USEFUL LEMMAS |------------------------------------------------------------
@@ -68,7 +74,7 @@ section useful_lemmas
 notation:50 lhs:51 " ⊻ " rhs:51 => lhs ↔ ¬rhs
 
 
-lemma ree (A B S : Finset ℕ) (ha : A ⊆ S) (hb : B ⊆ S) : union_prop A B S ↔
+lemma step (A B S : Finset ℕ) (ha : A ⊆ S) (hb : B ⊆ S) : union_prop A B S ↔
   ∀ s ∈ S, ((s ∈ A ∧ s ∉ B) ⊻ (s ∉ A ∧ s ∈ B)) ⊻ (s ∈ A ∧ s ∈ B)
   := by
   unfold union_prop
@@ -118,5 +124,7 @@ theorem intro22 : card (subset_pairs $ Finset.Icc 1 6) = 365 := by
 
 theorem intro22generalisation (n : ℕ)
   : card (subset_pairs $ Finset.Icc 1 n) = (3^n - 1) / 2 + 1 := by
+  refine @Finset.induction (Sym2 $ Finset ℕ) pairs_prop _ ?_ ?_ _
+
   sorry
   done

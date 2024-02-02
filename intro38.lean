@@ -386,7 +386,7 @@ lemma sum_of_B_elem_deg_even : ∀(p : V),
 --------------------------------------------------------------------------------
 
 theorem intro38
-  : ∃(a b : V), Even (card (G.neighborFinset a ∩ G.neighborFinset b)) := by
+    : ∃(a b : V), Even (card (G.neighborFinset a ∩ G.neighborFinset b)) := by
   by_contra g
   push_neg at g
   have odd : ∀(p : V), Odd (∑ q in closed_nh_comp _ G p,
