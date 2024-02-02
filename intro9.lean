@@ -21,6 +21,25 @@ open Nat Finset Set BigOperators
 --------------------------------------------------------------------------------
 section setup
 
+/-
+We can encode a selection as
+
+- Multiset colour, where colour is Fin 4, so the multiset cardinality is the
+  size of the selection;
+- a 4-tuple of naturals where each coordinate represents the number of objects
+  of a given colour, so the sum of the coordinates is the size;
+- a function from [n] to colour (:= Fin 4), where the image of each element is
+  the colour and n is the size.
+
+- Multisets are hard to work with, and I couldn't get pigeonhole principle to
+  apply very easily.
+- A selection is an integer partition, which are also hard to work with. Had
+  similar problems with pigeonhole principle implementation.
+- The number of socks of a given colour is the size of a preimage of a singleton
+  in colour, but why do all the preimage functions in Mathlib require some
+  injectivity conditions???
+-/
+
 abbrev colour := Fin 4
 abbrev selection (s : ℕ) : Type := Fin s → colour
 
