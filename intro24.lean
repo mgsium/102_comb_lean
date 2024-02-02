@@ -73,8 +73,8 @@ lemma intro24_of_infinite (n : ℕ) (h : Set.Infinite A)
     simp_all
   . let g' := (h' (x + z) (y - z) (Nat.lt_add_left n z x hz') (Nat.lt_trans hz' ht) ?_).2
     have hxz : x + z ∉ A := by
-        let h₁ := (h' x z (by linarith) (by linarith) (by linarith)).1
-        rw [not_subset] at h₁; simp_all
+      let h₁ := (h' x z (by linarith) (by linarith) (by linarith)).1
+      rw [not_subset] at h₁; simp_all
     have hxy : x + y ∉ A := by
       let h₁ := (h' x y (by linarith) (by linarith) (by linarith)).1
       rw [not_subset] at h₁; simp_all
