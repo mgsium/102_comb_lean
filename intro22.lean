@@ -116,6 +116,31 @@ theorem intro22 : card (subset_pairs $ Finset.Icc 1 6) = 365 := by
   sorry
   done
 
+#check (singleton 2 : Finset ℕ)
+
+#eval (singleton (2, 3) : Finset (ℕ × ℕ))
+
+-- def Conf (n : ℕ) := Finset (Fin n × Fin 3)
+
+-- structure Conf (n : ℕ) where
+--   val : Finset (Fin n × Fin 3)
+--   pf  : card (filter (fun x ↦ x.2 = 2) val) ≤ card (filter (fun x ↦ x.2 = 1) val)
+
+#eval filter (fun (x : ℕ × ℕ) => x.2 = 2) (singleton (2, 3))
+
+def one_gt_two {n : ℕ} (S : Finset $ Fin n × Fin 3) :=
+  card (filter (fun x ↦ x.2 = 2) S) ≤ card (filter (fun x ↦ x.2 = 1) S)
+
+-- Cardinality of fintype (filter?)
+-- example (n : ℕ) : Fintype.card (Conf n) = (3^n - 1)/2 + 1 := by
+
+--   done
+
+-- Cardinality of universal set
+-- example (n : ℕ) : card (filter one_gt_two (@univ (Conf n) _)) = (3^n - 1)/2 + 1 := by
+
+--   done
+
 theorem intro22generalisation (n : ℕ)
   : card (subset_pairs $ Finset.Icc 1 n) = (3^n - 1) / 2 + 1 := by
   sorry
