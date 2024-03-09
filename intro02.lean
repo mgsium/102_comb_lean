@@ -146,12 +146,12 @@ lemma sum_step (n : ℕ) : ∑ x in Icc 1 n, 2 * digit_count x
   done
 
 -- Sum of digit_count over [1,n] is less than the sum over [1,m] if n < m.
-lemma sum_inc (n m : ℕ) : n < m → ∑ x in Icc 1 n, 2 * digit_count x
+lemma sum_inc {n m : ℕ} (h : n < m) : ∑ x in Icc 1 n, 2 * digit_count x
     < ∑ x in Icc 1 m, 2 * digit_count x := by
-  induction' m with d hd <;> intro h
+  induction' m with d hd
   . contradiction
-  . by_cases h : n < d
-    . linarith [hd h, sum_step d]
+  . by_cases g : n < d
+    . linarith [hd g, sum_step d]
     . rw [(by linarith : n = d)]
       exact sum_step d
   done
@@ -176,7 +176,7 @@ theorem intro2 (n : ℕ) : ∑ x in Icc 1 n, 2 * digit_count x = 13794 → n = 2
   intro h
   rw [← digit_count_2001] at h
   rcases (lt_trichotomy n 2001) with g | g | g
-  . linarith [sum_inc n 2001 g]
+  . linarith [sum_inc g]
   . exact g
-  . linarith [sum_inc 2001 n g]
+  . linarith [sum_inc g]
   done
