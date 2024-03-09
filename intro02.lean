@@ -172,12 +172,11 @@ end useful_lemmas
 ---| MAIN THEOREM |-------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-theorem intro2 (n : ℕ): ∑ x in Icc 1 n, 2 * digit_count x = 13794 → n = 2001 := by
+theorem intro2 (n : ℕ) : ∑ x in Icc 1 n, 2 * digit_count x = 13794 → n = 2001 := by
   intro h
   rw [← digit_count_2001] at h
-  by_cases h' : n = 2001
-  . exact h'
-  . by_cases h'' : n > 2001
-    . linarith [sum_inc 2001 n h'']
-    . linarith [sum_inc n 2001 <| LE.le.lt_of_ne (Nat.not_lt.mp h'') h']
+  rcases (lt_trichotomy n 2001) with g | g | g
+  . linarith [sum_inc n 2001 g]
+  . exact g
+  . linarith [sum_inc 2001 n g]
   done
